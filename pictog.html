@@ -1,167 +1,141 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>APPT Interactiva</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pictogramas Alimentación</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f4f8;
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      text-align: center;
+      background-color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
     }
-    header {
-      background-color: #4CAF50;
-      color: white;
-      padding: 1rem;
-      font-size: 1.5rem;
-    }
-    .container {
-      margin: 2rem auto;
-      max-width: 700px;
+    .card {
       background: white;
-      padding: 2rem;
       border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      animation: fadeIn 1s ease-in;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    button {
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      padding: 0.8rem 1.5rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      margin: 1rem 0;
-      transition: background-color 0.3s;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .options, .rating-section, .comment-section {
-      margin-top: 1.5rem;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 500px;
+      padding: 2rem;
+      text-align: center;
       display: none;
     }
-    .option-btn {
-      margin: 0.5rem;
-      padding: 0.6rem 1.2rem;
-      border: 1px solid #4CAF50;
-      border-radius: 6px;
-      background-color: #e8f5e9;
-      color: #2e7d32;
-      cursor: pointer;
+    .card.active {
+      display: block;
     }
-    .option-btn:hover {
-      background-color: #c8e6c9;
-    }
-    .stars {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      font-size: 2rem;
-      color: gray;
-      cursor: pointer;
-    }
-    .stars .selected {
-      color: gold;
-    }
-    textarea {
-      width: 90%;
+    button {
       padding: 1rem;
-      margin-top: 1rem;
+      margin: 0.5rem;
+      border: none;
       border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
+      font-size: 1.2rem;
+      cursor: pointer;
     }
-    #feedbackMsg {
-      margin-top: 1rem;
-      font-weight: bold;
-      color: #333;
+    button:focus {
+      outline: 3px solid #4CAF50;
+    }
+    .emoji {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+    .summary {
+      white-space: pre-wrap;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
-  <header>Bienvenido a APPT</header>
+  <div class="card active" id="step1">
+    <div class="emoji" id="foodEmoji"></div>
+    <h2 id="foodName"></h2>
+    <p>¿Te gusta?</p>
+    <button onclick="selectPreference('me gusta')">✅ Me gusta</button>
+    <button onclick="selectPreference('no me gusta')">❌ No me gusta</button>
+  </div>
 
-  <div class="container">
-    <h2>¿Te gusta esta aplicación?</h2>
-    <button id="likeBtn">¡Sí, me gusta!</button>
+  <div class="card" id="step2">
+    <p>¿Por qué?</p>
+    <button onclick="addReasonAndNext('por su sabor')">😋 Sabor</button>
+    <button onclick="addReasonAndNext('por su textura')">👅 Textura</button>
+    <button onclick="addReasonAndNext('por su color')">🎨 Color</button>
+  </div>
 
-    <div class="options" id="likeOptions">
-      <p>¿Qué te gustó?</p>
-      <button class="option-btn">La interfaz</button>
-      <button class="option-btn">La funcionalidad</button>
-      <button class="option-btn">La idea general</button>
-    </div>
+  <div class="card" id="step3">
+    <p>¿Qué sientes?</p>
+    <button onclick="addReasonAndContinue('La textura me molesta')">👅 Textura molesta</button>
+    <button onclick="addReasonAndContinue('Está muy mojado')">💧 Muy mojado</button>
+    <button onclick="addReasonAndContinue('Hace ruido al morder')">🔊 Hace ruido</button>
+    <button onclick="addReasonAndContinue('Está muy caliente o frío')">🌡 Temperatura</button>
+    <button onclick="addReasonAndContinue('Me da náuseas')">😖 Náuseas</button>
+    <button onclick="addReasonAndContinue('Me siento bien')">😊 Me siento bien</button>
+  </div>
 
-    <div class="rating-section" id="ratingSection">
-      <p>¿Qué calificación le das?</p>
-      <div class="stars" id="stars">
-        <span data-value="1">&#9733;</span>
-        <span data-value="2">&#9733;</span>
-        <span data-value="3">&#9733;</span>
-        <span data-value="4">&#9733;</span>
-        <span data-value="5">&#9733;</span>
-      </div>
-    </div>
-
-    <div class="comment-section" id="commentSection">
-      <p>Déjanos un comentario:</p>
-      <textarea id="commentBox" rows="4" placeholder="Escribe tu opinión aquí..."></textarea><br/>
-      <button id="sendComment">Enviar comentario</button>
-    </div>
-
-    <p id="feedbackMsg"></p>
+  <div class="card" id="summaryCard">
+    <h2>Resumen</h2>
+    <div class="summary" id="summary"></div>
   </div>
 
   <script>
-    const likeBtn = document.getElementById('likeBtn');
-    const optionsDiv = document.getElementById('likeOptions');
-    const ratingSection = document.getElementById('ratingSection');
-    const commentSection = document.getElementById('commentSection');
-    const feedbackMsg = document.getElementById('feedbackMsg');
-    const stars = document.querySelectorAll('#stars span');
+    const foods = [
+      { name: 'manzana', emoji: '🍎' },
+      { name: 'brócoli', emoji: '🥦' },
+      { name: 'pan', emoji: '🍞' },
+      { name: 'pollo', emoji: '🍗' },
+      { name: 'fresa', emoji: '🍓' }
+    ];
 
-    likeBtn.addEventListener('click', () => {
-      optionsDiv.style.display = 'block';
-      ratingSection.style.display = 'block';
-      commentSection.style.display = 'block';
-      feedbackMsg.textContent = '';
-    });
+    let currentIndex = 0;
+    let currentFood = foods[currentIndex];
+    let currentStep = 1;
+    let selections = [];
 
-    document.querySelectorAll('.option-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        feedbackMsg.textContent = "¡Gracias por valorar: " + btn.textContent + "!";
-      });
-    });
+    function showStep(step) {
+      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+      document.getElementById(`step${step}`).classList.add('active');
+    }
 
-    stars.forEach(star => {
-      star.addEventListener('click', () => {
-        const rating = star.getAttribute('data-value');
-        stars.forEach(s => s.classList.remove('selected'));
-        for (let i = 0; i < rating; i++) {
-          stars[i].classList.add('selected');
-        }
-        feedbackMsg.textContent = "Has calificado con " + rating + " estrella(s).";
-      });
-    });
+    function loadFood() {
+      currentFood = foods[currentIndex];
+      document.getElementById('foodEmoji').textContent = currentFood.emoji;
+      document.getElementById('foodName').textContent = currentFood.name;
+    }
 
-    document.getElementById('sendComment').addEventListener('click', () => {
-      const comment = document.getElementById('commentBox').value;
-      if (comment.trim()) {
-        feedbackMsg.textContent = "¡Gracias por tu comentario!";
-        document.getElementById('commentBox').value = '';
+    function selectPreference(pref) {
+      selections.push(`Para ${currentFood.name}: ${pref}`);
+      currentStep = 2;
+      showStep(currentStep);
+    }
+
+    function addReasonAndNext(reason) {
+      selections[selections.length - 1] += `, ${reason}`;
+      currentStep = 3;
+      showStep(currentStep);
+    }
+
+    function addReasonAndContinue(reason) {
+      selections[selections.length - 1] += `, ${reason}`;
+      nextFood();
+    }
+
+    function nextFood() {
+      currentIndex++;
+      if (currentIndex >= foods.length) {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+        document.getElementById('summaryCard').classList.add('active');
+        document.getElementById('summary').textContent = selections.join('\n');
       } else {
-        feedbackMsg.textContent = "Por favor escribe un comentario antes de enviarlo.";
+        currentStep = 1;
+        loadFood();
+        showStep(currentStep);
       }
-    });
+    }
+
+    loadFood();
   </script>
 </body>
 </html>
