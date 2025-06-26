@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pictogramas Comunicativos - Hora de Comer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .category {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 8px solid #4299e1;
+        }
+
+        .category h2 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pictogram-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .pictogram-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pictogram-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border-color: #4299e1;
+        }
+
+        .pictogram-card:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .pictogram-card.playing {
+            border-color: #48bb78;
+            background: linear-gradient(135deg, #68d391, #48bb78);
+            color: white;
+        }
+
+        .pictogram-card.playing::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shine 1s ease-in-out;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .emoji {
+            font-size: 4em;
+            margin-bottom: 15px;
+            display: block;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .text {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .playing .text {
+            color: white;
+        }
+
+        .food-item {
+            font-size: 0.9em;
+            color: #718096;
+            font-style: italic;
+        }
+
+        .playing .food-item {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .me-gusta { border-left-color: #48bb78; }
+        .no-me-gusta { border-left-color: #f56565; }
+        .sensaciones { border-left-color: #ed8936; }
+        .frases { border-left-color: #9f7aea; }
+
+        .audio-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4299e1;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            opacity: 0.8;
+        }
+
+        .playing .audio-indicator {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .volume-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-control input[type="range"] {
+            width: 100px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .pictogram-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 15px;
+            }
+            
+            .emoji {
+                font-size: 3em;
+            }
+            
+            .text {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="volume-control">
+        <span>🔊</span>
+        <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="0.7">
+    </div>
+
+    <div class="container">
+        <h1>🍽️ Mi Comunicador de Comidas</h1>
+
+        <!-- Preferencias de Comida -->
+        <div class="category me-gusta">
+            <h2>😊 Mis Preferencias</h2>
+            <div class="pictogram-grid">
+                <div class="pictogram-card" onclick="playAudio('Me gusta', 'la fresa', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">✅🍓</span>
+                    <div class="text">Me gusta</div>
+                    <div class="food-item">la fresa</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Me gusta', 'el pan', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">✅🍞</span>
+                    <div class="text">Me gusta</div>
+                    <div class="food-item">el pan</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Me gusta', 'el pollo', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">✅🍗</span>
+                    <div class="text">Me gusta</div>
+                    <div class="food-item">el pollo</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('No me gusta', 'el tomate', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">❌🍅</span>
+                    <div class="text">No me gusta</div>
+                    <div class="food-item">el tomate</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('No me gusta', 'el brócoli', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">❌🥦</span>
+                    <div class="text">No me gusta</div>
+                    <div class="food-item">el brócoli</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('No me gusta', 'el camarón', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">❌🍤</span>
+                    <div class="text">No me gusta</div>
+                    <div class="food-item">el camarón</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Quiero más', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">👍</span>
+                    <div class="text">Quiero más</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Ya no quiero', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🛑</span>
+                    <div class="text">Ya no quiero</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensaciones -->
+        <div class="category sensaciones">
+            <h2>🫥 Cómo Me Siento</h2>
+            <div class="pictogram-grid">
+                <div class="pictogram-card" onclick="playAudio('La textura me molesta', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">👅</span>
+                    <div class="text">La textura me molesta</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Está muy mojado', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">💧</span>
+                    <div class="text">Está muy mojado</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Hace ruido cuando lo muerdo', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🔊</span>
+                    <div class="text">Hace ruido cuando lo muerdo</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Está muy caliente', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🌡️🔥</span>
+                    <div class="text">Está muy caliente</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Está muy frío', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🌡️❄️</span>
+                    <div class="text">Está muy frío</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Me da náuseas', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">😖</span>
+                    <div class="text">Me da náuseas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Frases Útiles -->
+        <div class="category frases">
+            <h2>💬 Lo Que Quiero Decir</h2>
+            <div class="pictogram-grid">
+                <div class="pictogram-card" onclick="playAudio('Puedo probar un poco', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🤏</span>
+                    <div class="text">Puedo probar un poco</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Quiero tocarlo primero', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">👋</span>
+                    <div class="text">Quiero tocarlo primero</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('No quiero olerlo', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">👃❌</span>
+                    <div class="text">No quiero olerlo</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Dame un minuto', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">⏰</span>
+                    <div class="text">Dame un minuto</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Estoy listo para probar', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">✨</span>
+                    <div class="text">Estoy listo para probar</div>
+                </div>
+                <div class="pictogram-card" onclick="playAudio('Necesito ayuda', '', this)">
+                    <div class="audio-indicator">🔊</div>
+                    <span class="emoji">🆘</span>
+                    <div class="text">Necesito ayuda</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAudio = null;
+        let volumeLevel = 0.7;
+
+        // Control de volumen
+        document.getElementById('volumeControl').addEventListener('input', function(e) {
+            volumeLevel = e.target.value;
+        });
+
+        function playAudio(mainText, foodItem = '', cardElement) {
+            // Detener audio anterior si existe
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+                // Remover clase playing de todas las tarjetas
+                document.querySelectorAll('.pictogram-card').forEach(card => {
+                    card.classList.remove('playing');
+                });
+            }
+
+            // Construir el texto completo
+            const fullText = foodItem ? `${mainText} ${foodItem}` : mainText;
+            
+            // Crear nueva instancia de audio
+            currentAudio = new SpeechSynthesisUtterance(fullText);
+            currentAudio.lang = 'es-ES';
+            currentAudio.rate = 0.8;  // Velocidad más lenta para mejor comprensión
+            currentAudio.pitch = 1.2; // Tono más alto, más amigable para niños
+            currentAudio.volume = volumeLevel;
+
+            // Agregar efectos visuales
+            cardElement.classList.add('playing');
+            
+            // Manejar eventos de audio
+            currentAudio.onend = function() {
+                cardElement.classList.remove('playing');
+                currentAudio = null;
+            };
+
+            currentAudio.onerror = function() {
+                cardElement.classList.remove('playing');
+                currentAudio = null;
+                console.log('Error reproduciendo audio');
+            };
+
+            // Reproducir audio
+            try {
+                speechSynthesis.speak(currentAudio);
+            } catch (error) {
+                console.log('Error con síntesis de voz:', error);
+                cardElement.classList.remove('playing');
+            }
+        }
+
+        // Limpiar al salir de la página
+        window.addEventListener('beforeunload', function() {
+            if (currentAudio) {
+                speechSynthesis.cancel();
+            }
+        });
+
+        // Verificar disponibilidad de síntesis de voz
+        if ('speechSynthesis' in window) {
+            console.log('Síntesis de voz disponible');
+        } else {
+            console.log('Síntesis de voz no disponible en este navegador');
+        }
+    </script>
+</body>
+</html>
