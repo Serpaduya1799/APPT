@@ -1,141 +1,153 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pictogramas Alimentación</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App de Pictogramas Alimentarios</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #f2f2f2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    .card {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 500px;
-      padding: 2rem;
-      text-align: center;
-      display: none;
-    }
-    .card.active {
-      display: block;
-    }
-    button {
+      background: #f2f2f2;
       padding: 1rem;
-      margin: 0.5rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1.2rem;
+      text-align: center;
+    }
+    h1, h2 {
+      color: #333;
+    }
+    .categoria {
+      margin: 2rem 0;
+    }
+    .pictogramas {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .pictograma {
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      width: 120px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       cursor: pointer;
     }
-    button:focus {
-      outline: 3px solid #4CAF50;
+    .pictograma img {
+      width: 100%;
+      height: 80px;
+      object-fit: contain;
     }
-    .emoji {
-      font-size: 4rem;
-      margin-bottom: 1rem;
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
     }
-    .summary {
-      white-space: pre-wrap;
-      margin-top: 2rem;
+    .modal-content {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+    .opciones {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .opcion {
+      background: #e0e0e0;
+      padding: 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 120px;
+    }
+    .sensorial {
+      background: #d9f6ff;
+      margin-top: 3rem;
+      padding: 1rem;
+      border-radius: 12px;
     }
   </style>
 </head>
 <body>
-  <div class="card active" id="step1">
-    <div class="emoji" id="foodEmoji"></div>
-    <h2 id="foodName"></h2>
-    <p>¿Te gusta?</p>
-    <button onclick="selectPreference('me gusta')">✅ Me gusta</button>
-    <button onclick="selectPreference('no me gusta')">❌ No me gusta</button>
+  <h1>🍽 Preferencias Alimentarias - TEA</h1>
+
+  <div class="categoria">
+    <h2>🍎 Frutas</h2>
+    <div class="pictogramas">
+      <div class="pictograma" onclick="abrirModal('manzana')">
+        <img src="https://cdn-icons-png.flaticon.com/512/415/415682.png" alt="Manzana" />
+        <p>Manzana</p>
+      </div>
+      <div class="pictograma" onclick="abrirModal('banana')">
+        <img src="https://cdn-icons-png.flaticon.com/512/590/590685.png" alt="Banana" />
+        <p>Banana</p>
+      </div>
+    </div>
   </div>
 
-  <div class="card" id="step2">
-    <p>¿Por qué?</p>
-    <button onclick="addReasonAndNext('por su sabor')">😋 Sabor</button>
-    <button onclick="addReasonAndNext('por su textura')">👅 Textura</button>
-    <button onclick="addReasonAndNext('por su color')">🎨 Color</button>
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h3 id="modal-title"></h3>
+      <div class="opciones">
+        <div class="opcion" onclick="responder('Me gusta')">✅ Me gusta</div>
+        <div class="opcion" onclick="responder('No me gusta')">❌ No me gusta</div>
+        <div class="opcion" onclick="responder('Quiero probarlo')">👍 Quiero probarlo</div>
+        <div class="opcion" onclick="responder('No quiero probarlo')">🛑 No quiero probarlo</div>
+      </div>
+      <button onclick="cerrarModal()">Cerrar</button>
+    </div>
   </div>
 
-  <div class="card" id="step3">
-    <p>¿Qué sientes?</p>
-    <button onclick="addReasonAndContinue('La textura me molesta')">👅 Textura molesta</button>
-    <button onclick="addReasonAndContinue('Está muy mojado')">💧 Muy mojado</button>
-    <button onclick="addReasonAndContinue('Hace ruido al morder')">🔊 Hace ruido</button>
-    <button onclick="addReasonAndContinue('Está muy caliente o frío')">🌡 Temperatura</button>
-    <button onclick="addReasonAndContinue('Me da náuseas')">😖 Náuseas</button>
-    <button onclick="addReasonAndContinue('Me siento bien')">😊 Me siento bien</button>
-  </div>
-
-  <div class="card" id="summaryCard">
-    <h2>Resumen</h2>
-    <div class="summary" id="summary"></div>
+  <div class="sensorial">
+    <h2>🧠 Experiencias Sensoriales</h2>
+    <div class="opciones">
+      <div class="opcion" onclick="hablar('La textura me molesta')">👅 La textura me molesta</div>
+      <div class="opcion" onclick="hablar('Está muy mojado')">💧 Está muy mojado</div>
+      <div class="opcion" onclick="hablar('Hace ruido cuando lo muerdo')">🔊 Hace ruido</div>
+      <div class="opcion" onclick="hablar('Está muy caliente/frío')">🌡 Muy caliente/frío</div>
+      <div class="opcion" onclick="hablar('Me da náuseas')">😖 Me da náuseas</div>
+      <div class="opcion" onclick="hablar('Me da miedo tocar')">😨 Me da miedo tocar</div>
+      <div class="opcion" onclick="hablar('Lo quiero seguir tocando')">😊 Lo quiero seguir tocando</div>
+      <div class="opcion" onclick="hablar('Puedo probar un poco')">🗣 Puedo probar un poco</div>
+      <div class="opcion" onclick="hablar('Quiero tocarlo primero')">🗣 Quiero tocarlo primero</div>
+      <div class="opcion" onclick="hablar('No quiero olerlo')">🗣 No quiero olerlo</div>
+      <div class="opcion" onclick="hablar('Dame un minuto')">🗣 Dame un minuto</div>
+      <div class="opcion" onclick="hablar('Estoy listo para probar')">🗣 Estoy listo para probar</div>
+    </div>
   </div>
 
   <script>
-    const foods = [
-      { name: 'manzana', emoji: '🍎' },
-      { name: 'brócoli', emoji: '🥦' },
-      { name: 'pan', emoji: '🍞' },
-      { name: 'pollo', emoji: '🍗' },
-      { name: 'fresa', emoji: '🍓' }
-    ];
+    let alimentoActual = '';
 
-    let currentIndex = 0;
-    let currentFood = foods[currentIndex];
-    let currentStep = 1;
-    let selections = [];
-
-    function showStep(step) {
-      document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-      document.getElementById(`step${step}`).classList.add('active');
+    function abrirModal(alimento) {
+      alimentoActual = alimento;
+      document.getElementById('modal-title').innerText = alimento.charAt(0).toUpperCase() + alimento.slice(1);
+      document.getElementById('modal').style.display = 'flex';
     }
 
-    function loadFood() {
-      currentFood = foods[currentIndex];
-      document.getElementById('foodEmoji').textContent = currentFood.emoji;
-      document.getElementById('foodName').textContent = currentFood.name;
+    function cerrarModal() {
+      document.getElementById('modal').style.display = 'none';
     }
 
-    function selectPreference(pref) {
-      selections.push(`Para ${currentFood.name}: ${pref}`);
-      currentStep = 2;
-      showStep(currentStep);
+    function responder(respuesta) {
+      const frase = `${respuesta} la ${alimentoActual}`;
+      hablar(frase);
+      cerrarModal();
     }
 
-    function addReasonAndNext(reason) {
-      selections[selections.length - 1] += `, ${reason}`;
-      currentStep = 3;
-      showStep(currentStep);
+    function hablar(frase) {
+      const utterance = new SpeechSynthesisUtterance(frase);
+      utterance.lang = 'es-ES';
+      utterance.rate = 0.9;
+      speechSynthesis.speak(utterance);
     }
-
-    function addReasonAndContinue(reason) {
-      selections[selections.length - 1] += `, ${reason}`;
-      nextFood();
-    }
-
-    function nextFood() {
-      currentIndex++;
-      if (currentIndex >= foods.length) {
-        document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-        document.getElementById('summaryCard').classList.add('active');
-        document.getElementById('summary').textContent = selections.join('\n');
-      } else {
-        currentStep = 1;
-        loadFood();
-        showStep(currentStep);
-      }
-    }
-
-    loadFood();
   </script>
 </body>
 </html>
