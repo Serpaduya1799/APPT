@@ -20,11 +20,16 @@
     }
     .container {
       margin: 2rem auto;
-      max-width: 600px;
+      max-width: 700px;
       background: white;
       padding: 2rem;
       border-radius: 10px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     button {
       background-color: #4CAF50;
@@ -35,12 +40,13 @@
       cursor: pointer;
       font-size: 1rem;
       margin: 1rem 0;
+      transition: background-color 0.3s;
     }
     button:hover {
       background-color: #45a049;
     }
-    .options {
-      margin-top: 1rem;
+    .options, .rating-section, .comment-section {
+      margin-top: 1.5rem;
       display: none;
     }
     .option-btn {
@@ -54,6 +60,30 @@
     }
     .option-btn:hover {
       background-color: #c8e6c9;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      font-size: 2rem;
+      color: gray;
+      cursor: pointer;
+    }
+    .stars .selected {
+      color: gold;
+    }
+    textarea {
+      width: 90%;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    #feedbackMsg {
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #333;
     }
   </style>
 </head>
@@ -71,23 +101,66 @@
       <button class="option-btn">La idea general</button>
     </div>
 
-    <p id="feedbackMsg" style="margin-top: 1rem; font-weight: bold;"></p>
+    <div class="rating-section" id="ratingSection">
+      <p>¿Qué calificación le das?</p>
+      <div class="stars" id="stars">
+        <span data-value="1">&#9733;</span>
+        <span data-value="2">&#9733;</span>
+        <span data-value="3">&#9733;</span>
+        <span data-value="4">&#9733;</span>
+        <span data-value="5">&#9733;</span>
+      </div>
+    </div>
+
+    <div class="comment-section" id="commentSection">
+      <p>Déjanos un comentario:</p>
+      <textarea id="commentBox" rows="4" placeholder="Escribe tu opinión aquí..."></textarea><br/>
+      <button id="sendComment">Enviar comentario</button>
+    </div>
+
+    <p id="feedbackMsg"></p>
   </div>
 
   <script>
     const likeBtn = document.getElementById('likeBtn');
     const optionsDiv = document.getElementById('likeOptions');
+    const ratingSection = document.getElementById('ratingSection');
+    const commentSection = document.getElementById('commentSection');
     const feedbackMsg = document.getElementById('feedbackMsg');
+    const stars = document.querySelectorAll('#stars span');
 
     likeBtn.addEventListener('click', () => {
       optionsDiv.style.display = 'block';
+      ratingSection.style.display = 'block';
+      commentSection.style.display = 'block';
       feedbackMsg.textContent = '';
     });
 
     document.querySelectorAll('.option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        feedbackMsg.textContent = "¡Gracias por tu opinión sobre: " + btn.textContent + "!";
+        feedbackMsg.textContent = "¡Gracias por valorar: " + btn.textContent + "!";
       });
+    });
+
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        const rating = star.getAttribute('data-value');
+        stars.forEach(s => s.classList.remove('selected'));
+        for (let i = 0; i < rating; i++) {
+          stars[i].classList.add('selected');
+        }
+        feedbackMsg.textContent = "Has calificado con " + rating + " estrella(s).";
+      });
+    });
+
+    document.getElementById('sendComment').addEventListener('click', () => {
+      const comment = document.getElementById('commentBox').value;
+      if (comment.trim()) {
+        feedbackMsg.textContent = "¡Gracias por tu comentario!";
+        document.getElementById('commentBox').value = '';
+      } else {
+        feedbackMsg.textContent = "Por favor escribe un comentario antes de enviarlo.";
+      }
     });
   </script>
 </body>
