@@ -1,109 +1,193 @@
-function clearMarkers() {
-            dataMarkers.forEach(marker => map.removeLayer(marker));
-            bufferMarkers.forEach(buffer => map.removeLayer(buffer));
-            dataMarkers = [];
-            bufferMarkers = [];
-            updateStatus('Marcadores y buffers eliminados', 'success');
-        }
-
-        function closeModal() {
-            document.getElementById('dataModal').style.display = 'none';
-            document.getElementById('geoForm').reset();
-            
-            if (currentMarker) {
-                map.removeLayer(currentMarker);
-                currentMarker = null;
-            }
-            
-            if (currentBuffer) {
-                map.removeLayer(currentBuffer);
-                currentBuffer = null;
-            }
-            
-            if (isAddingData) toggleAddData();
-            selectedCoords = null;
-        }<!DOCTYPE html>
-<html lang="es">
+<!DOCTYPE html>
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geoportal Azuay</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; display: flex; height: 100vh; }
-        .sidebar { width: 300px; background: #2c3e50; color: white; padding: 20px; overflow-y: auto; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; height: 100vh; display: flex; }
+        .sidebar { 
+            width: 320px; 
+            background: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
         .sidebar h1 { margin-bottom: 20px; font-size: 18px; text-align: center; }
         .section { margin-bottom: 20px; }
         .section h3 { color: #3498db; margin-bottom: 10px; font-size: 14px; }
-        .btn { width: 100%; padding: 10px; margin: 5px 0; background: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #map { 
+            flex: 1; 
+            width: 100%;
+            height: 100vh;
+            background: #e8f4fd;
+        }
+        .btn { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 5px 0; 
+            background: #3498db; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 14px;
+        }
         .btn:hover { background: #2980b9; }
         .btn.active { background: #e74c3c; }
-        .layer-item { margin: 5px 0; }
-        .layer-item label { display: flex; align-items: center; cursor: pointer; }
-        .layer-item input { margin-right: 8px; }
-        #map { flex: 1; }
-        .status { padding: 8px; margin: 10px 0; border-radius: 4px; font-size: 12px; }
-        .status.success { background: #27ae60; }
-        .status.error { background: #e74c3c; }
-        .status.warning { background: #f39c12; }
-        
-        .modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close:hover { color: black; }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-size: 12px; 
+            text-align: center;
+        }
+        .status.success { background: #27ae60; color: white; }
+        .status.error { background: #e74c3c; color: white; }
+        .status.warning { background: #f39c12; color: white; }
+        .layer-item { 
+            margin: 8px 0; 
+            display: flex; 
+            align-items: center;
+        }
+        .layer-item input { margin-right: 10px; }
+        .layer-item label { cursor: pointer; font-size: 13px; }
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 10000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.5); 
+        }
+        .modal-content { 
+            background: white; 
+            margin: 3% auto; 
+            padding: 25px; 
+            border-radius: 10px; 
+            width: 85%; 
+            max-width: 550px; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
+        .close { 
+            color: #aaa; 
+            float: right; 
+            font-size: 28px; 
+            font-weight: bold; 
+            cursor: pointer; 
+        }
+        .close:hover { color: #000; }
         .form-group { margin: 15px 0; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .coord-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; 
+            padding: 10px; 
+            border: 2px solid #ddd; 
+            border-radius: 5px; 
+            font-size: 14px;
+            box-sizing: border-box; 
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .coord-info {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        .coord-info h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .realtime-popup .leaflet-popup-content-wrapper {
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+        }
+        
+        .realtime-buffer {
+            animation: bufferPulse 3s infinite;
+        }
+        
+        @keyframes bufferPulse {
+            0% { opacity: 0.15; }
+            50% { opacity: 0.25; }
+            100% { opacity: 0.15; }
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h1>🗺️ Geoportal Azuay</h1>
         
-        <div class="section">
-            <h3>🔌 Estado</h3>
-            <div id="status" class="status warning">Iniciando...</div>
-        </div>
-
+        <div id="status" class="status warning">Iniciando sistema...</div>
+        
         <div class="section">
             <h3>🗂️ Capas</h3>
             <div class="layer-item">
-                <label><input type="checkbox" id="layer-cantones" checked> Cantones</label>
-            </div>
-            <div class="layer-item">
-                <label><input type="checkbox" id="layer-parroquias" checked> Parroquias</label>
-            </div>
-            <div class="layer-item">
-                <label><input type="checkbox" id="layer-edificios"> Edificios</label>
-            </div>
-            <div class="layer-item">
-                <label><input type="checkbox" id="layer-vias"> Vías</label>
-            </div>
-            <div class="layer-item">
-                <label><input type="checkbox" id="layer-usos"> Usos de Suelo</label>
+                <input type="checkbox" id="layer-cantones" checked>
+                <label for="layer-cantones">Cantones del Azuay</label>
+                <div class="layer-item">
+                <input type="checkbox" id="layer-realtime" checked>
+                <label for="layer-realtime">📍 Datos en Tiempo Real</label>
             </div>
         </div>
-
+            <div class="layer-item">
+                <input type="checkbox" id="layer-parroquias" checked>
+                <label for="layer-parroquias">Parroquias Azuay</label>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="layer-edificios">
+                <label for="layer-edificios">Edificios</label>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="layer-vias">
+                <label for="layer-vias">Vías Cuenca</label>
+            </div>
+            <div class="layer-item">
+                <input type="checkbox" id="layer-usos">
+                <label for="layer-usos">Usos de Suelo</label>
+            </div>
+        </div>
+        
         <div class="section">
             <h3>📊 Herramientas</h3>
             <button class="btn" id="btnAddData">📍 Ingresar Datos</button>
             <button class="btn" id="btnShowData">📋 Ver Datos</button>
-            <button class="btn" id="btnClear">🧹 Limpiar</button>
+            <button class="btn" id="btnClear">🧹 Limpiar Marcadores</button>
         </div>
     </div>
-
+    
     <div id="map"></div>
 
+    <!-- Modal para datos -->
     <div id="dataModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
-            <h2>📍 Datos Geotécnicos</h2>
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">📍 Datos Geotécnicos</h2>
             
             <div class="coord-info">
-                <strong>Coordenadas:</strong><br>
-                Lat: <span id="coordLat">-</span>, Lng: <span id="coordLng">-</span><br>
-                UTM X: <span id="coordUtmX">-</span>, UTM Y: <span id="coordUtmY">-</span>
+                <h4>Coordenadas del Punto</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: monospace;">
+                    <div><strong>Latitud:</strong> <span id="coordLat">-</span></div>
+                    <div><strong>Longitud:</strong> <span id="coordLng">-</span></div>
+                    <div><strong>UTM X:</strong> <span id="coordUtmX">-</span></div>
+                    <div><strong>UTM Y:</strong> <span id="coordUtmY">-</span></div>
+                </div>
             </div>
 
             <form id="geoForm">
@@ -111,7 +195,7 @@ function clearMarkers() {
                     <label>Nombre del Técnico/Investigador:</label>
                     <input type="text" id="nombreTecnico" required placeholder="Ingrese su nombre completo">
                 </div>
-
+                
                 <div class="form-group">
                     <label>Tipo de Suelo (SUCS):</label>
                     <select id="tipoSuelo" required>
@@ -128,6 +212,9 @@ function clearMarkers() {
                         <option value="CL">CL - Arcilla baja plasticidad</option>
                         <option value="MH">MH - Limo alta plasticidad</option>
                         <option value="CH">CH - Arcilla alta plasticidad</option>
+                        <option value="OL">OL - Limo orgánico</option>
+                        <option value="OH">OH - Arcilla orgánica</option>
+                        <option value="PT">PT - Turba</option>
                     </select>
                 </div>
 
@@ -150,155 +237,207 @@ function clearMarkers() {
 
                 <div class="form-group">
                     <label>Índice de Plasticidad (%):</label>
-                    <input type="number" id="plasticidad" step="0.1" min="0" max="100">
+                    <input type="number" id="plasticidad" step="0.1" min="0" max="100" placeholder="Opcional">
                 </div>
 
                 <div class="form-group">
                     <label>Nivel Freático (m):</label>
-                    <input type="number" id="freatico" step="0.1" min="0">
+                    <input type="number" id="freatico" step="0.1" min="0" placeholder="Opcional">
                 </div>
 
                 <div class="form-group">
                     <label>Provincia:</label>
-                    <input type="text" id="provincia" readonly style="background: #f0f0f0;">
+                    <select id="provincia" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Azuay">Azuay</option>
+                        <option value="Bolívar">Bolívar</option>
+                        <option value="Cañar">Cañar</option>
+                        <option value="Carchi">Carchi</option>
+                        <option value="Chimborazo">Chimborazo</option>
+                        <option value="Cotopaxi">Cotopaxi</option>
+                        <option value="El Oro">El Oro</option>
+                        <option value="Esmeraldas">Esmeraldas</option>
+                        <option value="Galápagos">Galápagos</option>
+                        <option value="Guayas">Guayas</option>
+                        <option value="Imbabura">Imbabura</option>
+                        <option value="Loja">Loja</option>
+                        <option value="Los Ríos">Los Ríos</option>
+                        <option value="Manabí">Manabí</option>
+                        <option value="Morona Santiago">Morona Santiago</option>
+                        <option value="Napo">Napo</option>
+                        <option value="Orellana">Orellana</option>
+                        <option value="Pastaza">Pastaza</option>
+                        <option value="Pichincha">Pichincha</option>
+                        <option value="Santa Elena">Santa Elena</option>
+                        <option value="Santo Domingo">Santo Domingo</option>
+                        <option value="Sucumbíos">Sucumbíos</option>
+                        <option value="Tungurahua">Tungurahua</option>
+                        <option value="Zamora Chinchipe">Zamora Chinchipe</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
                     <label>Cantón:</label>
-                    <input type="text" id="canton" readonly style="background: #f0f0f0;">
+                    <select id="canton" required>
+                        <option value="">Seleccione primero la provincia...</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Parroquia:</label>
-                    <input type="text" id="parroquia" readonly style="background: #f0f0f0;">
+                    <label>Dirección:</label>
+                    <input type="text" id="direccion" placeholder="Ingrese la dirección del punto">
                 </div>
 
                 <div class="form-group">
                     <label>Observaciones:</label>
-                    <textarea id="observaciones" rows="3"></textarea>
+                    <textarea id="observaciones" rows="3" placeholder="Información adicional (opcional)"></textarea>
                 </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" class="btn">💾 Guardar</button>
-                    <button type="button" class="btn" id="cancelBtn" style="background: #95a5a6;">❌ Cancelar</button>
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" class="btn" style="flex: 1;">💾 Guardar Datos</button>
+                    <button type="button" class="btn" id="cancelBtn" style="flex: 1; background: #95a5a6;">❌ Cancelar</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <script>
         // Configuración
         const SUPABASE_URL = 'https://xgywnwvvrtfoltkcxfgc.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhneXdud3Z2cnRmb2x0a2N4ZmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2OTUzMTIsImV4cCI6MjA2ODI3MTMxMn0.RNrfIZsgGwZJ8cnKmF26u0kKtoA7n3HAMjda1Wd-EmY';
-        const MAPBOX_TOKEN = 'pk.eyJ1Ijoic2VycGFkdXlhMTciLCJhIjoiY21kZjc1czgwMGFlajJucHVubDgxb3h6biJ9.rvGIyz4jXxeT9kKE6_5J9Q';
 
-        // Variables
+        // Variables globales
         let map, supabase;
         let isAddingData = false;
         let currentMarker = null;
         let currentBuffer = null;
         let selectedCoords = null;
-        let layers = {};
         let dataMarkers = [];
-        let bufferMarkers = [];
+        let layers = {};
+        let realTimeInterval = null;
+        let lastUpdateTime = null;
 
         // Datos para selectores
-        const cantones = ['Cuenca', 'Girón', 'Gualaceo', 'Nabón', 'Paute', 'Pucará', 'San Fernando', 'Santa Isabel', 'Sigsig', 'Oña', 'Chordeleg', 'El Pan', 'Sevilla de Oro', 'Guachapala', 'Camilo Ponce Enríquez'];
-        
-        const parroquias = {
-            'Cuenca': ['Cuenca', 'Baños', 'Cumbe', 'Chaucha', 'Molleturo', 'Nulti', 'Paccha', 'Quingeo', 'Ricaurte', 'San Joaquín', 'Santa Ana', 'Sayausí', 'Sidcay', 'Sinincay', 'Tarqui', 'Turi', 'Valle'],
-            'Girón': ['Girón', 'Asunción', 'San Gerardo'],
-            'Gualaceo': ['Gualaceo', 'Chordeleg', 'Jadán', 'San Juan'],
-            'Nabón': ['Nabón', 'Cochapata', 'La Paz'],
-            'Paute': ['Paute', 'Bulán', 'Chicán', 'El Cabo'],
-            'Santa Isabel': ['Santa Isabel', 'Abdón Calderón', 'El Carmen de Pijilí'],
-            'Sigsig': ['Sigsig', 'Cuchil', 'Gima', 'Ludo'],
-            'Chordeleg': ['Chordeleg', 'Delegate', 'La Unión']
+        const cantonesPorProvincia = {
+            'Azuay': ['Cuenca', 'Girón', 'Gualaceo', 'Nabón', 'Paute', 'Pucará', 'San Fernando', 'Santa Isabel', 'Sigsig', 'Oña', 'Chordeleg', 'El Pan', 'Sevilla de Oro', 'Guachapala', 'Camilo Ponce Enríquez'],
+            'Bolívar': ['Guaranda', 'Chillanes', 'Chimbo', 'Echeandía', 'Las Naves', 'Caluma', 'San Miguel'],
+            'Cañar': ['Azogues', 'Biblián', 'Cañar', 'La Troncal', 'El Tambo', 'Déleg', 'Suscal'],
+            'Carchi': ['Tulcán', 'Bolívar', 'Espejo', 'Mira', 'Montúfar', 'San Pedro de Huaca'],
+            'Chimborazo': ['Riobamba', 'Alausí', 'Colta', 'Chambo', 'Chunchi', 'Guamote', 'Guano', 'Pallatanga', 'Penipe', 'Cumandá'],
+            'Cotopaxi': ['Latacunga', 'La Maná', 'Pangua', 'Pujilí', 'Salcedo', 'Saquisilí', 'Sigchos'],
+            'El Oro': ['Machala', 'Arenillas', 'Atahualpa', 'Balsas', 'Chilla', 'El Guabo', 'Huaquillas', 'Las Lajas', 'Marcabelí', 'Pasaje', 'Piñas', 'Portovelo', 'Santa Rosa', 'Zaruma'],
+            'Esmeraldas': ['Esmeraldas', 'Eloy Alfaro', 'Muisne', 'Quinindé', 'San Lorenzo', 'Atacames', 'Rioverde', 'La Concordia'],
+            'Galápagos': ['San Cristóbal', 'Isabela', 'Santa Cruz'],
+            'Guayas': ['Guayaquil', 'Alfredo Baquerizo Moreno', 'Balao', 'Balzar', 'Colimes', 'Daule', 'Durán', 'El Empalme', 'El Triunfo', 'Milagro', 'Naranjal', 'Naranjito', 'Palestina', 'Pedro Carbo', 'Samborondón', 'Santa Lucía', 'Salitre', 'San Jacinto de Yaguachi', 'Playas', 'Simón Bolívar', 'Coronel Marcelino Maridueña', 'Lomas de Sargentillo', 'Nobol', 'General Antonio Elizalde', 'Isidro Ayora'],
+            'Imbabura': ['Ibarra', 'Antonio Ante', 'Cotacachi', 'Otavalo', 'Pimampiro', 'San Miguel de Urcuquí'],
+            'Loja': ['Loja', 'Calvas', 'Catamayo', 'Celica', 'Chaguarpamba', 'Espíndola', 'Gonzanamá', 'Macará', 'Paltas', 'Pindal', 'Puyango', 'Saraguro', 'Sozoranga', 'Zapotillo', 'Paquisha', 'Olmedo'],
+            'Los Ríos': ['Babahoyo', 'Baba', 'Montalvo', 'Puebloviejo', 'Quevedo', 'Urdaneta', 'Ventanas', 'Vínces', 'Palenque', 'Buena Fé', 'Valencia', 'Mocache', 'Quinsaloma'],
+            'Manabí': ['Portoviejo', 'Bolívar', 'Chone', 'El Carmen', 'Flavio Alfaro', 'Jipijapa', 'Junín', 'Manta', 'Montecristi', 'Paján', 'Pichincha', 'Rocafuerte', 'Santa Ana', 'Sucre', 'Tosagua', 'Veinticuatro de Mayo', 'Pedernales', 'Olmedo', 'Puerto López', 'Jama', 'Jaramijó', 'San Vicente'],
+            'Morona Santiago': ['Morona', 'Gualaquiza', 'Limón Indanza', 'Palora', 'Santiago', 'Sucúa', 'Huamboya', 'San Juan Bosco', 'Taisha', 'Logroño', 'Pablo Sexto', 'Tiwintza'],
+            'Napo': ['Tena', 'Archidona', 'El Chaco', 'Quijos', 'Carlos Julio Arosemena Tola'],
+            'Orellana': ['Francisco de Orellana', 'Aguarico', 'La Joya de los Sachas', 'Loreto'],
+            'Pastaza': ['Puyo', 'Arajuno', 'Mera', 'Santa Clara'],
+            'Pichincha': ['Quito', 'Cayambe', 'Mejía', 'Pedro Moncayo', 'Rumiñahui', 'San Miguel de los Bancos', 'Pedro Vicente Maldonado', 'Puerto Quito'],
+            'Santa Elena': ['Santa Elena', 'La Libertad', 'Salinas'],
+            'Santo Domingo': ['Santo Domingo'],
+            'Sucumbíos': ['Lago Agrio', 'Gonzalo Pizarro', 'Putumayo', 'Shushufindi', 'Sucumbíos', 'Cascales', 'Cuyabeno'],
+            'Tungurahua': ['Ambato', 'Baños de Agua Santa', 'Cevallos', 'Mocha', 'Patate', 'Pelileo', 'Píllaro', 'Quero', 'Tisaleo'],
+            'Zamora Chinchipe': ['Zamora', 'Chinchipe', 'Nangaritza', 'Yacuambi', 'Yantzaza', 'El Pangui', 'Centinela del Cóndor', 'Palanda', 'Paquisha']
         };
 
-        // Conversión UTM simple para Ecuador (Zona 17S)
+        // Función UTM
         function toUTM(lat, lng) {
             const x = Math.round((lng + 81) * 111320 * Math.cos(lat * Math.PI / 180) + 500000);
             const y = Math.round(Math.abs(lat * 110540) + 10000000);
             return { x, y };
         }
 
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', init);
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
 
-        function init() {
-            console.log('Iniciando geoportal...');
-            updateStatus('Iniciando...', 'warning');
+        // Inicialización
+        window.onload = function() {
+            updateStatus('Iniciando mapa...', 'warning');
             
-            initSupabase();
-            initMap();
-            initEvents();
-            loadLayers();
-        }
-
-        function initSupabase() {
             try {
+                // Inicializar Supabase
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                updateStatus('Conectado a Supabase', 'success');
-                console.log('Supabase OK');
-            } catch (error) {
-                updateStatus('Error Supabase: ' + error.message, 'error');
-                console.error('Error Supabase:', error);
-            }
-        }
-
-        function initMap() {
-            try {
+                
+                // Crear mapa
                 map = L.map('map').setView([-2.9001, -79.0059], 10);
                 
-                // Mapa base
+                // Agregar capa base
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap'
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 19
                 }).addTo(map);
-
-                // Mapa satelital
-                const satellite = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`, {
-                    attribution: '© Mapbox'
-                });
-
-                // Control de capas
-                L.control.layers(
-                    { 'Mapa': map._layers[Object.keys(map._layers)[0]], 'Satélite': satellite },
-                    {}
-                ).addTo(map);
-
-                map.on('click', onMapClick);
-                updateStatus('Mapa listo', 'success');
-                console.log('Mapa OK');
+                
+                updateStatus('Mapa cargado correctamente', 'success');
+                
+                // Cargar capas automáticamente
+                setTimeout(() => {
+                    loadLayer('cantones');
+                    loadLayer('parroquias');
+                    startRealTimeUpdates();
+                }, 1000);
+                
+                // Eventos
+                setupEvents();
+                
             } catch (error) {
-                updateStatus('Error mapa: ' + error.message, 'error');
-                console.error('Error mapa:', error);
+                console.error('Error inicializando:', error);
+                updateStatus('Error: ' + error.message, 'error');
             }
-        }
+        };
 
-        function initEvents() {
+        function setupEvents() {
+            // Botones principales
             document.getElementById('btnAddData').onclick = toggleAddData;
             document.getElementById('btnShowData').onclick = showData;
             document.getElementById('btnClear').onclick = clearMarkers;
             
+            // Modal
             document.querySelector('.close').onclick = closeModal;
             document.getElementById('cancelBtn').onclick = closeModal;
             document.getElementById('geoForm').onsubmit = saveData;
+            document.getElementById('radioBuffer').onchange = createBuffer;
             
-            // Event para crear buffer cuando se selecciona radio
-            document.getElementById('radioBuffer').onchange = function() {
-                if (this.value && selectedCoords) {
-                    createBuffer(this.value);
+            // Selectores de ubicación
+            document.getElementById('provincia').onchange = function() {
+                const canton = document.getElementById('canton');
+                
+                canton.innerHTML = '<option value="">Seleccione cantón...</option>';
+                
+                if (cantonesPorProvincia[this.value]) {
+                    cantonesPorProvincia[this.value].forEach(c => {
+                        canton.innerHTML += `<option value="${c}">${c}</option>`;
+                    });
                 }
             };
-
-            // Controles de capas
+            
+            document.getElementById('canton').onchange = function() {
+                // Ya no necesita llenar parroquias
+            };
+            
+            // Capas
             document.querySelectorAll('input[id^="layer-"]').forEach(cb => {
                 cb.onchange = function() {
                     const layerName = this.id.replace('layer-', '');
+                    if (layerName === 'realtime') {
+                        if (this.checked) {
+                            startRealTimeUpdates();
+                        } else {
+                            stopRealTimeUpdates();
+                        }
+                        return;
+                    }
+                    
                     if (this.checked) {
                         loadLayer(layerName);
                     } else {
@@ -306,7 +445,10 @@ function clearMarkers() {
                     }
                 };
             });
-
+            
+            // Clic en mapa
+            map.on('click', onMapClick);
+            
             // Cerrar modal con clic fuera
             window.onclick = function(event) {
                 if (event.target === document.getElementById('dataModal')) {
@@ -315,16 +457,10 @@ function clearMarkers() {
             };
         }
 
-        async function loadLayers() {
-            // Cargar capas principales al inicio
-            loadLayer('cantones');
-            loadLayer('parroquias');
-        }
-
         async function loadLayer(layerName) {
             if (layers[layerName]) return;
             
-            const tableMap = {
+            const tableNames = {
                 'cantones': 'CANTONESDELAZUAY',
                 'parroquias': 'parroquiasazuay',
                 'edificios': 'edificios',
@@ -332,7 +468,7 @@ function clearMarkers() {
                 'usos': 'usos de suelo'
             };
             
-            const tableName = tableMap[layerName];
+            const tableName = tableNames[layerName];
             if (!tableName) return;
             
             try {
@@ -340,10 +476,15 @@ function clearMarkers() {
                 
                 const { data, error } = await supabase.from(tableName).select('*');
                 
-                if (error) throw error;
+                if (error) {
+                    console.error(`Error cargando ${tableName}:`, error);
+                    updateStatus(`Error en ${layerName}`, 'error');
+                    return;
+                }
                 
                 if (data && data.length > 0) {
                     const layerGroup = L.layerGroup();
+                    let count = 0;
                     
                     data.forEach(item => {
                         // Buscar campo de geometría
@@ -362,27 +503,40 @@ function clearMarkers() {
                                     : item[geomField];
                                 
                                 const layer = L.geoJSON(geom, {
-                                    style: getLayerStyle(layerName)
+                                    style: getLayerStyle(layerName),
+                                    onEachFeature: function(feature, layer) {
+                                        let popupContent = `<h4 style="margin: 0 0 10px 0; color: #2c3e50;">${tableName}</h4>`;
+                                        Object.keys(item).forEach(key => {
+                                            if (!key.toLowerCase().includes('geom') && item[key]) {
+                                                popupContent += `<p style="margin: 3px 0;"><strong>${key}:</strong> ${item[key]}</p>`;
+                                            }
+                                        });
+                                        layer.bindPopup(popupContent);
+                                    }
                                 });
                                 
-                                layer.bindPopup(`<strong>${tableName}</strong><br>${JSON.stringify(item, null, 2).slice(0, 200)}...`);
                                 layerGroup.addLayer(layer);
+                                count++;
                             } catch (e) {
                                 console.warn('Error parseando geometría:', e);
                             }
                         }
                     });
                     
-                    layers[layerName] = layerGroup;
-                    layerGroup.addTo(map);
-                    updateStatus(`${layerName} cargado (${data.length} elementos)`, 'success');
+                    if (count > 0) {
+                        layers[layerName] = layerGroup;
+                        layerGroup.addTo(map);
+                        updateStatus(`${layerName} cargado (${count} elementos)`, 'success');
+                    } else {
+                        updateStatus(`${layerName}: sin geometrías válidas`, 'warning');
+                    }
                 } else {
-                    updateStatus(`${layerName}: sin datos`, 'warning');
+                    updateStatus(`${layerName}: tabla vacía`, 'warning');
                 }
                 
             } catch (error) {
                 console.error(`Error cargando ${layerName}:`, error);
-                updateStatus(`Error en ${layerName}: ${error.message}`, 'error');
+                updateStatus(`Error en ${layerName}`, 'error');
             }
         }
 
@@ -409,7 +563,7 @@ function clearMarkers() {
             const btn = document.getElementById('btnAddData');
             
             if (isAddingData) {
-                btn.textContent = '❌ Cancelar';
+                btn.textContent = '❌ Cancelar Ingreso';
                 btn.classList.add('active');
                 map.getContainer().style.cursor = 'crosshair';
                 updateStatus('Haz clic en el mapa para agregar punto', 'warning');
@@ -417,15 +571,13 @@ function clearMarkers() {
                 btn.textContent = '📍 Ingresar Datos';
                 btn.classList.remove('active');
                 map.getContainer().style.cursor = '';
-                updateStatus('Modo agregar desactivado', 'success');
-                if (currentMarker) {
-                    map.removeLayer(currentMarker);
-                    currentMarker = null;
-                }
+                updateStatus('Modo ingreso desactivado', 'success');
+                if (currentMarker) map.removeLayer(currentMarker);
+                if (currentBuffer) map.removeLayer(currentBuffer);
             }
         }
 
-        async function onMapClick(e) {
+        function onMapClick(e) {
             if (!isAddingData) return;
             
             selectedCoords = e.latlng;
@@ -442,79 +594,15 @@ function clearMarkers() {
             document.getElementById('coordUtmX').textContent = utm.x;
             document.getElementById('coordUtmY').textContent = utm.y;
             
-            // Detectar automáticamente ubicación administrativa
-            await detectLocation(e.latlng);
-            
             document.getElementById('dataModal').style.display = 'block';
         }
 
-        async function detectLocation(latlng) {
-            updateStatus('Detectando ubicación...', 'warning');
+        function createBuffer() {
+            const radius = document.getElementById('radioBuffer').value;
+            if (!radius || !selectedCoords) return;
             
-            try {
-                // Buscar en qué cantón está el punto
-                const canton = await findPointInLayer('cantones', latlng);
-                if (canton) {
-                    document.getElementById('provincia').value = 'Azuay';
-                    document.getElementById('canton').value = canton;
-                    console.log('Cantón detectado:', canton);
-                }
-                
-                // Buscar en qué parroquia está el punto
-                const parroquia = await findPointInLayer('parroquias', latlng);
-                if (parroquia) {
-                    document.getElementById('parroquia').value = parroquia;
-                    console.log('Parroquia detectada:', parroquia);
-                }
-                
-                if (canton || parroquia) {
-                    updateStatus('Ubicación detectada automáticamente', 'success');
-                } else {
-                    updateStatus('No se pudo detectar ubicación', 'warning');
-                    // Fallback manual
-                    document.getElementById('provincia').value = 'Azuay';
-                    document.getElementById('canton').value = 'Sin detectar';
-                    document.getElementById('parroquia').value = 'Sin detectar';
-                }
-                
-            } catch (error) {
-                console.error('Error detectando ubicación:', error);
-                updateStatus('Error detectando ubicación', 'error');
-                // Valores por defecto
-                document.getElementById('provincia').value = 'Azuay';
-                document.getElementById('canton').value = 'Sin detectar';
-                document.getElementById('parroquia').value = 'Sin detectar';
-            }
-        }
-
-        async function findPointInLayer(layerName, latlng) {
-            if (!layers[layerName]) return null;
-            
-            let result = null;
-            
-            layers[layerName].eachLayer(function(layer) {
-                if (layer.getBounds && layer.getBounds().contains(latlng)) {
-                    // Obtener el nombre del polígono
-                    if (layer.feature && layer.feature.properties) {
-                        const props = layer.feature.properties;
-                        // Buscar campos comunes para nombres
-                        result = props.DPA_DESCAN || props.DPA_DESPRO || props.DPA_DESPAR || 
-                                props.CANTON || props.PARROQUIA || props.NOMBRE || 
-                                props.name || props.NAME || 'Detectado';
-                    }
-                }
-            });
-            
-            return result;
-        }
-
-        function createBuffer(radius) {
-            if (!selectedCoords || !radius) return;
-            
-            // Remover buffer anterior
             if (currentBuffer) map.removeLayer(currentBuffer);
             
-            // Crear círculo de buffer
             currentBuffer = L.circle([selectedCoords.lat, selectedCoords.lng], {
                 radius: parseInt(radius),
                 color: '#3498db',
@@ -524,17 +612,13 @@ function clearMarkers() {
                 dashArray: '5, 5'
             }).addTo(map);
             
-            // Agregar popup al buffer
             currentBuffer.bindPopup(`
                 <div style="text-align: center;">
                     <h4>🎯 Área de Influencia</h4>
                     <p><strong>Radio:</strong> ${radius} metros</p>
                     <p><strong>Área:</strong> ${(Math.PI * Math.pow(radius, 2) / 10000).toFixed(2)} hectáreas</p>
-                    <p>Esta zona se considera con el mismo tipo de suelo</p>
                 </div>
             `);
-            
-            updateStatus(`Buffer de ${radius}m creado`, 'success');
         }
 
         async function saveData(e) {
@@ -546,7 +630,7 @@ function clearMarkers() {
             }
             
             try {
-                updateStatus('Guardando...', 'warning');
+                updateStatus('Guardando datos...', 'warning');
                 
                 const utm = toUTM(selectedCoords.lat, selectedCoords.lng);
                 
@@ -563,7 +647,7 @@ function clearMarkers() {
                     nivel_freatico: parseFloat(document.getElementById('freatico').value) || null,
                     provincia: document.getElementById('provincia').value,
                     canton: document.getElementById('canton').value,
-                    parroquia: document.getElementById('parroquia').value,
+                    direccion: document.getElementById('direccion').value,
                     observaciones: document.getElementById('observaciones').value || null,
                     fecha_registro: new Date().toISOString()
                 };
@@ -572,34 +656,34 @@ function clearMarkers() {
                 
                 if (error) {
                     if (error.code === '42P01') {
-                        alert('Tabla no existe. Créala en pgAdmin con:\n\nCREATE TABLE datos_geotecnicos (\n  id SERIAL PRIMARY KEY,\n  nombre_tecnico VARCHAR(100) NOT NULL,\n  latitud DOUBLE PRECISION,\n  longitud DOUBLE PRECISION,\n  utm_x INTEGER,\n  utm_y INTEGER,\n  tipo_suelo_sucs VARCHAR(10),\n  profundidad_muestra DECIMAL(5,2),\n  radio_influencia INTEGER,\n  indice_plasticidad DECIMAL(5,2),\n  nivel_freatico DECIMAL(10,2),\n  provincia VARCHAR(50),\n  canton VARCHAR(50),\n  parroquia VARCHAR(100),\n  observaciones TEXT,\n  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);');
-                        updateStatus('Tabla no existe', 'error');
+                        alert('CREAR TABLA EN PGADMIN:\n\nCREATE TABLE datos_geotecnicos (\n  id SERIAL PRIMARY KEY,\n  nombre_tecnico VARCHAR(100),\n  latitud DOUBLE PRECISION,\n  longitud DOUBLE PRECISION,\n  utm_x INTEGER,\n  utm_y INTEGER,\n  tipo_suelo_sucs VARCHAR(10),\n  profundidad_muestra DECIMAL(5,2),\n  radio_influencia INTEGER,\n  indice_plasticidad DECIMAL(5,2),\n  nivel_freatico DECIMAL(10,2),\n  provincia VARCHAR(50),\n  canton VARCHAR(50),\n  direccion TEXT,\n  observaciones TEXT,\n  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);');
+                        updateStatus('Tabla no existe - Ver instrucciones', 'error');
                         return;
                     }
                     throw error;
                 }
                 
-                updateStatus('Datos guardados', 'success');
-                alert('Datos guardados exitosamente');
-                
-                // Mantener el buffer en el mapa como referencia
-                if (currentBuffer) {
-                    bufferMarkers.push(currentBuffer);
-                    currentBuffer = null;
-                }
-                
+                updateStatus('Datos guardados exitosamente', 'success');
+                alert('✅ Datos guardados correctamente');
                 closeModal();
+                
+                // Actualizar inmediatamente la capa en tiempo real
+                if (document.getElementById('layer-realtime').checked) {
+                    setTimeout(() => {
+                        loadRealTimeData();
+                    }, 500);
+                }
                 
             } catch (error) {
                 console.error('Error guardando:', error);
                 updateStatus('Error: ' + error.message, 'error');
-                alert('Error guardando: ' + error.message);
+                alert('❌ Error: ' + error.message);
             }
         }
 
         async function showData() {
             try {
-                updateStatus('Cargando datos...', 'warning');
+                updateStatus('Cargando datos existentes...', 'warning');
                 
                 const { data, error } = await supabase
                     .from('datos_geotecnicos')
@@ -608,7 +692,7 @@ function clearMarkers() {
                 
                 if (error) {
                     if (error.code === '42P01') {
-                        alert('No hay tabla de datos aún');
+                        alert('No hay tabla de datos aún. Crea la tabla primero.');
                         updateStatus('Tabla no existe', 'warning');
                         return;
                     }
@@ -619,18 +703,18 @@ function clearMarkers() {
                 
                 if (data && data.length > 0) {
                     data.forEach((punto, i) => {
-                        // Crear marcador principal
+                        // Marcador principal
                         const marker = L.marker([punto.latitud, punto.longitud])
                             .bindPopup(`
-                                <div style="max-width: 280px;">
-                                    <h4>📊 Punto ${i + 1}</h4>
-                                    <p><strong>👤 Técnico:</strong> ${punto.nombre_tecnico || 'N/A'}</p>
-                                    <p><strong>🏗️ Suelo:</strong> ${punto.tipo_suelo_sucs || 'N/A'}</p>
-                                    <p><strong>📏 Profundidad:</strong> ${punto.profundidad_muestra || 'N/A'} m</p>
-                                    <p><strong>🎯 Radio influencia:</strong> ${punto.radio_influencia || 'N/A'} m</p>
+                                <div style="max-width: 300px;">
+                                    <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📊 Punto Geotécnico ${i + 1}</h4>
+                                    <p><strong>👤 Técnico:</strong> ${punto.nombre_tecnico}</p>
+                                    <p><strong>🏗️ Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
+                                    <p><strong>📏 Profundidad:</strong> ${punto.profundidad_muestra}m</p>
+                                    <p><strong>🎯 Radio:</strong> ${punto.radio_influencia}m</p>
                                     <p><strong>📈 Plasticidad:</strong> ${punto.indice_plasticidad || 'N/A'}%</p>
-                                    <p><strong>💧 Freático:</strong> ${punto.nivel_freatico || 'N/A'} m</p>
-                                    <p><strong>📍 Ubicación:</strong> ${punto.parroquia}, ${punto.canton}</p>
+                                    <p><strong>💧 Freático:</strong> ${punto.nivel_freatico || 'N/A'}m</p>
+                                    <p><strong>📍 Ubicación:</strong> ${punto.direccion || 'Sin dirección'}, ${punto.canton}</p>
                                     <p><strong>📅 Fecha:</strong> ${new Date(punto.fecha_registro).toLocaleDateString()}</p>
                                     ${punto.observaciones ? `<p><strong>📝 Obs:</strong> ${punto.observaciones}</p>` : ''}
                                 </div>
@@ -639,14 +723,14 @@ function clearMarkers() {
                         
                         dataMarkers.push(marker);
                         
-                        // Crear buffer si tiene radio de influencia
+                        // Buffer del área de influencia
                         if (punto.radio_influencia) {
                             const buffer = L.circle([punto.latitud, punto.longitud], {
                                 radius: punto.radio_influencia,
                                 color: '#27ae60',
                                 fillColor: '#27ae60',
-                                fillOpacity: 0.1,
-                                weight: 1,
+                                fillOpacity: 0.15,
+                                weight: 2,
                                 dashArray: '3, 3'
                             }).addTo(map);
                             
@@ -654,26 +738,33 @@ function clearMarkers() {
                                 <div style="text-align: center;">
                                     <h4>🎯 Área de Influencia</h4>
                                     <p><strong>Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
-                                    <p><strong>Radio:</strong> ${punto.radio_influencia} m</p>
+                                    <p><strong>Radio:</strong> ${punto.radio_influencia}m</p>
                                     <p><strong>Técnico:</strong> ${punto.nombre_tecnico}</p>
                                 </div>
                             `);
                             
-                            bufferMarkers.push(buffer);
+                            dataMarkers.push(buffer);
                         }
                     });
                     
-                    updateStatus(`${data.length} puntos cargados`, 'success');
-                    alert(`Se cargaron ${data.length} puntos con sus áreas de influencia`);
+                    updateStatus(`${data.length} puntos cargados con éxito`, 'success');
+                    alert(`✅ Se cargaron ${data.length} puntos geotécnicos en el mapa`);
+                    
+                    // Ajustar vista del mapa
+                    if (data.length > 0) {
+                        const group = new L.featureGroup(dataMarkers.filter(m => m instanceof L.Marker));
+                        map.fitBounds(group.getBounds().pad(0.1));
+                    }
+                    
                 } else {
-                    updateStatus('No hay datos', 'warning');
-                    alert('No hay datos guardados');
+                    updateStatus('No hay datos para mostrar', 'warning');
+                    alert('ℹ️ No hay datos geotécnicos guardados');
                 }
                 
             } catch (error) {
                 console.error('Error cargando datos:', error);
-                updateStatus('Error: ' + error.message, 'error');
-                alert('Error: ' + error.message);
+                updateStatus('Error cargando datos', 'error');
+                alert('❌ Error cargando datos: ' + error.message);
             }
         }
 
@@ -692,17 +783,202 @@ function clearMarkers() {
                 currentMarker = null;
             }
             
+            if (currentBuffer) {
+                map.removeLayer(currentBuffer);
+                currentBuffer = null;
+            }
+            
             if (isAddingData) toggleAddData();
             selectedCoords = null;
         }
 
-        function updateStatus(message, type) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = `status ${type}`;
+        // Funciones para tiempo real
+        function startRealTimeUpdates() {
+            if (realTimeInterval) return; // Ya está activo
+            
+            updateStatus('Tiempo real activado', 'success');
+            lastUpdateTime = new Date().toISOString();
+            
+            // Cargar datos inmediatamente
+            loadRealTimeData();
+            
+            // Actualizar cada 10 segundos
+            realTimeInterval = setInterval(() => {
+                loadRealTimeData();
+            }, 10000);
         }
 
-        console.log('Geoportal cargado');
+        function stopRealTimeUpdates() {
+            if (realTimeInterval) {
+                clearInterval(realTimeInterval);
+                realTimeInterval = null;
+                updateStatus('Tiempo real desactivado', 'warning');
+                
+                // Limpiar marcadores de tiempo real
+                clearRealTimeMarkers();
+            }
+        }
+
+        async function loadRealTimeData() {
+            try {
+                const { data, error } = await supabase
+                    .from('datos_geotecnicos')
+                    .select('*')
+                    .gte('fecha_registro', lastUpdateTime || new Date(Date.now() - 24*60*60*1000).toISOString())
+                    .order('fecha_registro', { ascending: false });
+
+                if (error) {
+                    console.error('Error cargando datos en tiempo real:', error);
+                    return;
+                }
+
+                if (data && data.length > 0) {
+                    // Limpiar marcadores anteriores de tiempo real
+                    clearRealTimeMarkers();
+                    
+                    data.forEach((punto, i) => {
+                        // Crear marcador con animación
+                        const marker = L.marker([punto.latitud, punto.longitud], {
+                            icon: L.divIcon({
+                                html: `<div style="
+                                    background: linear-gradient(45deg, #e74c3c, #c0392b);
+                                    width: 20px;
+                                    height: 20px;
+                                    border-radius: 50%;
+                                    border: 3px solid white;
+                                    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6);
+                                    animation: pulse 2s infinite;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    color: white;
+                                    font-size: 10px;
+                                    font-weight: bold;
+                                ">📍</div>
+                                <style>
+                                    @keyframes pulse {
+                                        0% { transform: scale(1); box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6); }
+                                        50% { transform: scale(1.2); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.8); }
+                                        100% { transform: scale(1); box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6); }
+                                    }
+                                </style>`,
+                                iconSize: [20, 20],
+                                iconAnchor: [10, 10]
+                            })
+                        });
+
+                        // Popup mejorado para tiempo real
+                        const timeAgo = getTimeAgo(punto.fecha_registro);
+                        const popupContent = `
+                            <div style="max-width: 320px; font-family: Arial, sans-serif;">
+                                <div style="background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; padding: 10px; margin: -15px -20px 15px -20px; border-radius: 5px 5px 0 0; text-align: center;">
+                                    <h4 style="margin: 0; font-size: 14px;">🔴 DATOS EN VIVO</h4>
+                                    <small style="opacity: 0.9;">Agregado ${timeAgo}</small>
+                                </div>
+                                
+                                <div style="margin-bottom: 12px;">
+                                    <p style="margin: 5px 0;"><strong>👤 Técnico:</strong> ${punto.nombre_tecnico}</p>
+                                    <p style="margin: 5px 0;"><strong>🏗️ Suelo:</strong> 
+                                        <span style="background: #3498db; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">
+                                            ${punto.tipo_suelo_sucs}
+                                        </span>
+                                    </p>
+                                    <p style="margin: 5px 0;"><strong>📏 Profundidad:</strong> ${punto.profundidad_muestra}m</p>
+                                    <p style="margin: 5px 0;"><strong>🎯 Radio:</strong> ${punto.radio_influencia}m</p>
+                                </div>
+                                
+                                <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; margin-bottom: 10px;">
+                                    <p style="margin: 3px 0; font-size: 12px;"><strong>📈 Plasticidad:</strong> ${punto.indice_plasticidad || 'N/A'}%</p>
+                                    <p style="margin: 3px 0; font-size: 12px;"><strong>💧 Freático:</strong> ${punto.nivel_freatico || 'N/A'}m</p>
+                                </div>
+                                
+                                <p style="margin: 5px 0; font-size: 12px;"><strong>📍 Ubicación:</strong> ${punto.direccion || 'Sin dirección'}</p>
+                                <p style="margin: 5px 0; font-size: 12px;"><strong>🗺️ Cantón:</strong> ${punto.canton}, ${punto.provincia}</p>
+                                
+                                ${punto.observaciones ? `
+                                    <div style="border-top: 1px solid #ecf0f1; padding-top: 8px; margin-top: 8px;">
+                                        <p style="margin: 0; font-size: 11px;"><strong>📝 Observaciones:</strong></p>
+                                        <p style="margin: 3px 0; font-size: 11px; font-style: italic;">${punto.observaciones}</p>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+
+                        marker.bindPopup(popupContent, {
+                            maxWidth: 350,
+                            className: 'realtime-popup'
+                        });
+                        
+                        marker.addTo(map);
+                        marker._isRealTimeMarker = true;
+                        dataMarkers.push(marker);
+                        
+                        // Buffer en tiempo real
+                        if (punto.radio_influencia) {
+                            const buffer = L.circle([punto.latitud, punto.longitud], {
+                                radius: punto.radio_influencia,
+                                color: '#e74c3c',
+                                fillColor: '#e74c3c',
+                                fillOpacity: 0.15,
+                                weight: 2,
+                                dashArray: '5, 10',
+                                className: 'realtime-buffer'
+                            }).addTo(map);
+                            
+                            buffer.bindPopup(`
+                                <div style="text-align: center;">
+                                    <h4 style="color: #e74c3c; margin: 0 0 8px 0;">🔴 Área en Tiempo Real</h4>
+                                    <p style="margin: 3px 0;"><strong>Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
+                                    <p style="margin: 3px 0;"><strong>Radio:</strong> ${punto.radio_influencia}m</p>
+                                    <p style="margin: 3px 0;"><strong>Técnico:</strong> ${punto.nombre_tecnico}</p>
+                                    <small style="color: #7f8c8d;">Agregado ${timeAgo}</small>
+                                </div>
+                            `);
+                            
+                            buffer._isRealTimeMarker = true;
+                            dataMarkers.push(buffer);
+                        }
+                    });
+                    
+                    // Actualizar tiempo de última consulta
+                    lastUpdateTime = new Date().toISOString();
+                    
+                    if (data.length > 0) {
+                        updateStatus(`Tiempo real: ${data.length} puntos nuevos`, 'success');
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error en tiempo real:', error);
+                updateStatus('Error en tiempo real', 'error');
+            }
+        }
+
+        function clearRealTimeMarkers() {
+            dataMarkers = dataMarkers.filter(marker => {
+                if (marker._isRealTimeMarker) {
+                    map.removeLayer(marker);
+                    return false;
+                }
+                return true;
+            });
+        }
+
+        function getTimeAgo(dateString) {
+            const now = new Date();
+            const date = new Date(dateString);
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return 'hace unos segundos';
+            if (diffMins < 60) return `hace ${diffMins} min`;
+            if (diffHours < 24) return `hace ${diffHours}h`;
+            return `hace ${diffDays} días`;
+        }
+
+        console.log('🗺️ Geoportal Azuay cargado y listo para usar');
     </script>
 </body>
 </html>
