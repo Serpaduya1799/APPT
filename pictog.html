@@ -3,551 +3,977 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Guardianes de la Topografía</title>
+  <title>Guardianes de la Topografía - Aventura tipo Mario</title>
   <style>
     * { box-sizing: border-box; }
+    :root {
+      --bg-dark: #0f172a;
+      --panel: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.12);
+      --text: #ffffff;
+      --muted: #cbd5e1;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --blue: #38bdf8;
+      --red: #ef4444;
+    }
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: linear-gradient(135deg, #0f172a, #1e293b, #0b1120);
-      color: #fff;
+      color: var(--text);
       min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 20%, rgba(56,189,248,.16), transparent 24%),
+        radial-gradient(circle at 85% 10%, rgba(168,85,247,.16), transparent 20%),
+        radial-gradient(circle at 20% 85%, rgba(34,197,94,.12), transparent 24%),
+        linear-gradient(135deg, #020617, #0f172a, #111827);
     }
-    .container {
-      width: min(1200px, 94%);
-      margin: 24px auto;
+    .app {
+      width: min(1360px, 96%);
+      margin: 16px auto;
       display: grid;
-      grid-template-columns: 1.4fr 0.9fr;
-      gap: 24px;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
     }
     .panel {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 24px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 28px;
       overflow: hidden;
-      backdrop-filter: blur(8px);
+      box-shadow: 0 20px 45px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
     }
-    .header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.12); }
-    .title { margin: 0; font-size: 2rem; }
-    .subtitle { color: #cbd5e1; line-height: 1.5; }
+    .hero {
+      padding: 22px;
+      border-bottom: 1px solid var(--border);
+    }
+    h1, h2, h3, h4 { margin-top: 0; }
+    .subtitle { color: var(--muted); line-height: 1.55; }
     .badge {
-      display: inline-block; margin-top: 12px; background: #facc15; color: #111827;
-      padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 0.9rem;
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #facc15, #fb923c);
+      color: #111827;
+      font-weight: 800;
     }
-    .content { padding: 24px; }
-    .scene {
-      position: relative; height: 280px; border-radius: 22px; overflow: hidden; margin-top: 18px;
-      background: linear-gradient(135deg, #0f172a, #0f3a63, #14532d);
-    }
-    .scene .sun {
-      position: absolute; left: 32px; bottom: 38px; width: 82px; height: 82px; border-radius: 50%;
-      background: radial-gradient(circle, #fde68a 0%, #facc15 70%, rgba(250,204,21,0.2) 100%);
-      box-shadow: 0 0 50px rgba(250,204,21,0.45);
-    }
-    .scene .ground {
-      position: absolute; left: 0; right: 0; bottom: 0; height: 96px;
-      background: linear-gradient(to top, #166534, #22c55e);
-    }
-    .scene .path {
-      position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
-      width: 280px; height: 22px; border-radius: 999px;
-      background: linear-gradient(to right, #f59e0b, #fde68a, #f59e0b);
-      box-shadow: 0 0 20px rgba(245,158,11,0.45);
-    }
-    .scene .castle {
-      position: absolute; right: 36px; bottom: 60px; width: 170px; height: 120px;
-      background: #1f2937; border-radius: 16px 16px 0 0;
-    }
-    .scene .tower1, .scene .tower2 {
-      position: absolute; width: 34px; height: 80px; background: #111827; top: -36px; border-radius: 10px 10px 0 0;
-    }
-    .scene .tower1 { left: 18px; }
-    .scene .tower2 { right: 18px; }
-    .scene .princess {
-      position: absolute; right: 95px; bottom: 140px; width: 34px; height: 34px; border-radius: 50%; background: #f9a8d4;
-      box-shadow: 0 0 15px rgba(249,168,212,0.55);
-    }
-    .scene .stars::before, .scene .stars::after {
-      content: ''; position: absolute; inset: 0;
-      background-image:
-        radial-gradient(circle at 20% 22%, white 0 1px, transparent 2px),
-        radial-gradient(circle at 70% 15%, white 0 1px, transparent 2px),
-        radial-gradient(circle at 45% 35%, white 0 1px, transparent 2px),
-        radial-gradient(circle at 86% 28%, white 0 1px, transparent 2px),
-        radial-gradient(circle at 58% 10%, white 0 1px, transparent 2px);
-      opacity: .5;
-    }
-    .topbar, .stats { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; }
-    .stats-boxes { display: flex; gap: 10px; flex-wrap: wrap; }
-    .mini {
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08);
-      padding: 10px 14px; border-radius: 16px; color: #e2e8f0; font-size: 0.95rem;
-    }
-    .hearts { display: flex; gap: 8px; }
-    .heart {
-      width: 16px; height: 16px; border-radius: 50%; background: #fb7185; box-shadow: 0 0 10px rgba(251,113,133,.45);
-    }
-    .progress-wrap { margin: 18px 0; }
-    .progress-bar {
-      height: 12px; background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; width: 0%; background: linear-gradient(to right, #38bdf8, #22c55e, #facc15); transition: width .35s ease;
-    }
+    .content { padding: 20px; }
     .card {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 22px; padding: 18px;
-      margin-bottom: 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+      padding: 16px;
+      margin-bottom: 16px;
     }
-    .question { font-size: 1.2rem; font-weight: 700; line-height: 1.5; }
-    .options { display: grid; gap: 12px; margin-top: 18px; }
-    .option {
-      padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.06); cursor: pointer; transition: .25s ease;
-      color: white; text-align: left; font-size: 1rem;
+    .button {
+      border: none;
+      border-radius: 16px;
+      padding: 14px 20px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .18s ease, opacity .18s ease, background .18s ease;
     }
-    .option:hover { transform: translateY(-2px); background: rgba(255,255,255,0.11); }
-    .option.correct { background: rgba(34,197,94,0.22); border-color: #4ade80; }
-    .option.wrong { background: rgba(244,63,94,0.22); border-color: #fb7185; }
-    .feedback {
-      margin-top: 16px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.08); color: #dbeafe;
+    .button:hover { transform: translateY(-2px); }
+    .primary { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+    .secondary { background: linear-gradient(135deg, #facc15, #f59e0b); color: #111827; }
+    .blue { background: linear-gradient(135deg, #38bdf8, #2563eb); color: white; }
+    .danger { background: linear-gradient(135deg, #fb7185, #ef4444); color: white; }
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .hud-box {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 12px;
+      text-align: center;
+    }
+    .hud-label { color: var(--muted); font-size: .88rem; }
+    .hud-value { font-size: 1.25rem; font-weight: 900; margin-top: 6px; }
+    .game-shell {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 14px;
+    }
+    .world {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      overflow: hidden;
+      border-radius: 24px;
+      background: linear-gradient(180deg, #60a5fa 0%, #93c5fd 42%, #a7f3d0 100%);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .sun {
+      position: absolute;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      right: 26px;
+      top: 24px;
+      background: radial-gradient(circle, #fef3c7 0%, #facc15 70%, rgba(250,204,21,.1) 100%);
+      box-shadow: 0 0 28px rgba(250,204,21,.4);
+    }
+    .cloud {
+      position: absolute;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.8);
+      filter: blur(.2px);
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: rgba(255,255,255,.9);
+      border-radius: 50%;
+    }
+    .cloud::before { width: 26px; height: 26px; left: 8px; top: -10px; }
+    .cloud::after { width: 34px; height: 34px; right: 10px; top: -15px; }
+    .cloud.c1 { width: 90px; left: 70px; top: 50px; }
+    .cloud.c2 { width: 110px; left: 310px; top: 95px; }
+    .cloud.c3 { width: 92px; right: 180px; top: 62px; }
+    .mountain {
+      position: absolute;
+      bottom: 100px;
+      width: 0;
+      height: 0;
+      border-left: 120px solid transparent;
+      border-right: 120px solid transparent;
+      border-bottom: 160px solid #16a34a;
+      opacity: .95;
+    }
+    .m1 { left: 60px; }
+    .m2 { left: 380px; border-bottom-color: #22c55e; }
+    .m3 { right: 80px; border-bottom-color: #15803d; }
+    .world-track {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 2800px;
+      transform: translateX(0px);
+      transition: transform .2s ease;
+    }
+    .ground {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 96px;
+      background: linear-gradient(180deg, #22c55e 0%, #16a34a 50%, #166534 100%);
+    }
+    .ground::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 20px;
+      background: linear-gradient(180deg, #65a30d, #4d7c0f);
+    }
+    .tile {
+      position: absolute;
+      bottom: 96px;
+      width: 64px;
+      height: 64px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 900;
+      box-shadow: inset 0 -6px 0 rgba(0,0,0,.15), 0 10px 16px rgba(0,0,0,.12);
+    }
+    .coin-block {
+      background: linear-gradient(180deg, #facc15, #f59e0b);
+      color: #7c2d12;
+      border: 3px solid rgba(120,53,15,.35);
+    }
+    .stone-block {
+      background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+      color: #334155;
+      border: 3px solid rgba(51,65,85,.28);
+    }
+    .flag {
+      position: absolute;
+      bottom: 96px;
+      width: 14px;
+      height: 180px;
+      background: #e5e7eb;
+      border-radius: 10px;
+    }
+    .flag::after {
+      content: '';
+      position: absolute;
+      left: 14px;
+      top: 24px;
+      width: 78px;
+      height: 42px;
+      background: linear-gradient(135deg, #ef4444, #f59e0b);
+      clip-path: polygon(0 0, 100% 18%, 100% 82%, 0 100%);
+      border-radius: 0 10px 10px 0;
+    }
+    .player {
+      position: absolute;
+      width: 54px;
+      height: 78px;
+      left: 90px;
+      bottom: 96px;
+      z-index: 8;
+    }
+    .player .head {
+      position: absolute;
+      left: 14px;
+      top: 10px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fde68a;
+      border: 2px solid rgba(0,0,0,.08);
+    }
+    .player .cap {
+      position: absolute;
+      left: 8px;
+      top: 2px;
+      width: 36px;
+      height: 18px;
+      border-radius: 14px 14px 6px 6px;
+      background: #ef4444;
+    }
+    .player .body {
+      position: absolute;
+      left: 11px;
+      top: 30px;
+      width: 32px;
+      height: 24px;
+      border-radius: 10px;
+      background: #2563eb;
+    }
+    .player .arm1, .player .arm2 {
+      position: absolute;
+      top: 34px;
+      width: 8px;
+      height: 20px;
+      background: #fde68a;
+      border-radius: 8px;
+    }
+    .player .arm1 { left: 5px; }
+    .player .arm2 { right: 5px; }
+    .player .leg1, .player .leg2 {
+      position: absolute;
+      top: 52px;
+      width: 10px;
+      height: 24px;
+      border-radius: 8px;
+      background: #111827;
+    }
+    .player .leg1 { left: 14px; }
+    .player .leg2 { left: 30px; }
+    .marker {
+      position: absolute;
+      bottom: 96px;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, #fde68a 42%, #f59e0b 78%);
+      box-shadow: 0 0 26px rgba(245,158,11,.42);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      color: #7c2d12;
+      border: 4px solid rgba(255,255,255,.7);
+      z-index: 4;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+    .marker.done {
+      background: radial-gradient(circle, #ffffff 0%, #86efac 45%, #22c55e 80%);
+      color: #14532d;
+      animation: none;
+    }
+    .obstacle {
+      position: absolute;
+      bottom: 96px;
+      z-index: 6;
+    }
+    .crate {
+      width: 60px;
+      height: 60px;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #d97706, #92400e);
+      border: 4px solid rgba(120,53,15,.45);
+      box-shadow: inset 0 -8px 0 rgba(0,0,0,.18), 0 10px 14px rgba(0,0,0,.12);
+    }
+    .spike {
+      width: 90px;
+      height: 54px;
+      background: linear-gradient(180deg, #e2e8f0, #64748b);
+      clip-path: polygon(0% 100%, 10% 55%, 20% 100%, 30% 45%, 40% 100%, 50% 50%, 60% 100%, 70% 45%, 80% 100%, 90% 55%, 100% 100%);
+      border-radius: 4px;
+      box-shadow: 0 8px 14px rgba(0,0,0,.12);
+    }
+    .pipe {
+      width: 86px;
+      height: 92px;
+      border-radius: 14px 14px 0 0;
+      background: linear-gradient(180deg, #22c55e, #15803d);
+      border: 4px solid rgba(20,83,45,.5);
+      position: relative;
+      box-shadow: inset 0 -8px 0 rgba(0,0,0,.16), 0 10px 14px rgba(0,0,0,.12);
+    }
+    .pipe::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      right: -8px;
+      top: -14px;
+      height: 22px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #4ade80, #16a34a);
+      border: 4px solid rgba(20,83,45,.45);
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .key {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .question-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,.76);
       display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 20;
+    }
+    .question-modal.show { display: flex; }
+    .modal-card {
+      width: min(900px, 100%);
+      background: linear-gradient(180deg, rgba(15,23,42,.98), rgba(30,41,59,.98));
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(0,0,0,.45);
+    }
+    .modal-top {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+    .modal-body { padding: 20px; }
+    .visual-box {
+      min-height: 220px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #dbeafe, #e9d5ff);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    .question-title { font-size: 1.35rem; font-weight: 900; margin-top: 14px; line-height: 1.45; }
+    .answers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .answer {
+      border: none;
+      border-radius: 20px;
+      padding: 16px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 800;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 12px 22px rgba(0,0,0,.16);
+      transition: transform .18s ease, filter .18s ease;
+    }
+    .answer:hover { transform: translateY(-2px); }
+    .shape {
+      width: 38px; height: 38px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.18);
+      flex-shrink: 0;
+      font-size: 1.1rem;
+    }
+    .a1 { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .a2 { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .a3 { background: linear-gradient(135deg, #f59e0b, #facc15); color: #111827; }
+    .a4 { background: linear-gradient(135deg, #22c55e, #16a34a); }
+    .dim { opacity: .45; }
+    .correct { box-shadow: 0 0 0 3px rgba(255,255,255,.14), 0 0 26px rgba(34,197,94,.44); }
+    .wrong { box-shadow: 0 0 0 3px rgba(255,255,255,.12), 0 0 26px rgba(239,68,68,.34); }
+    .feedback {
+      display: none;
+      margin-top: 16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 16px;
     }
     .feedback.show { display: block; }
-    .feedback strong.correct { color: #86efac; }
-    .feedback strong.wrong { color: #fda4af; }
-    .btn {
-      border: none; border-radius: 16px; padding: 14px 20px; font-size: 1rem; font-weight: 700; cursor: pointer;
-      transition: .25s ease; margin-top: 14px;
+    .good { color: #86efac; font-weight: 900; }
+    .bad { color: #fda4af; font-weight: 900; }
+    .side { padding: 18px; }
+    .mini-level {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      margin-bottom: 12px;
     }
-    .btn-primary { background: #22c55e; color: white; }
-    .btn-primary:hover { background: #16a34a; }
-    .btn-secondary { background: #facc15; color: #111827; }
-    .btn-secondary:hover { background: #eab308; }
-    .btn-blue { background: #38bdf8; color: #082f49; }
-    .btn-blue:hover { background: #0ea5e9; color: white; }
-    .side-panel { padding: 24px; }
-    .side-title { margin-top: 0; }
-    .level-item {
-      display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 14px; margin-bottom: 12px;
+    .mini-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #38bdf8, #a855f7);
+      font-size: 1.25rem;
+      font-weight: 900;
+      flex-shrink: 0;
     }
-    .icon {
-      width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; font-weight: bold;
-      background: linear-gradient(135deg, #0ea5e9, #22c55e);
-    }
-    .start-screen, .result-screen { display: block; }
-    .hidden { display: none; }
-    .result-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0;
+    .small { color: var(--muted); line-height: 1.55; }
+    .result-boxes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
     }
     .result-box {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 18px; text-align: center;
+      border-radius: 18px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 16px;
+      text-align: center;
     }
-    .big { font-size: 2rem; font-weight: 800; margin-top: 8px; }
-    .small { color: #cbd5e1; font-size: .95rem; }
-    .canvas-note { color: #cbd5e1; line-height: 1.6; }
-    .visual-box {
-      height: 180px; border-radius: 20px; margin-bottom: 12px; overflow: hidden; position: relative;
-      background: linear-gradient(135deg, #dbeafe, #c4b5fd);
+    .big { font-size: 2rem; font-weight: 900; margin-top: 6px; }
+    .crown {
+      width: 92px; height: 92px; margin: 0 auto 12px auto; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 2.2rem;
+      background: linear-gradient(135deg, #facc15, #fb923c);
+      color: #111827;
+      box-shadow: 0 14px 28px rgba(250,204,21,.28);
     }
-    .visual-units .line { position: absolute; left: 40px; right: 40px; bottom: 44px; height: 5px; background: #334155; }
-    .visual-units .stake { position: absolute; left: 52px; bottom: 44px; width: 6px; height: 80px; background: #92400e; }
-    .visual-units .mark { position: absolute; bottom: 30px; color: #334155; font-weight: bold; font-size: .9rem; }
-    .visual-units .m0 { left: 40px; } .visual-units .m5 { left: 185px; } .visual-units .m10 { left: 335px; } .visual-units .m15 { right: 28px; }
-    .visual-units .mission { position: absolute; right: 16px; top: 16px; background: rgba(255,255,255,.8); color: #0f172a; padding: 10px 12px; border-radius: 14px; font-weight: 700; }
-    .visual-triangle svg, .visual-mountain svg { width: 100%; height: 100%; }
-    .footer-note { margin-top: 16px; color: #94a3b8; font-size: 0.9rem; }
-    @media (max-width: 950px) {
-      .container { grid-template-columns: 1fr; }
-      .result-grid { grid-template-columns: 1fr; }
+    .hidden { display: none; }
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .answers, .result-boxes, .hud { grid-template-columns: 1fr; }
+      .world { height: 380px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="panel">
-      <div class="header">
-        <h1 class="title">Guardianes de la Topografía</h1>
-        <p class="subtitle">Juego visual y didáctico para reforzar unidades, geometría, trigonometría y razonamiento espacial en Topografía.</p>
-        <span class="badge">HTML puro · listo para GitHub Pages</span>
-        <div class="scene">
-          <div class="stars"></div>
-          <div class="sun"></div>
-          <div class="ground"></div>
-          <div class="path"></div>
-          <div class="castle">
-            <div class="tower1"></div>
-            <div class="tower2"></div>
-          </div>
-          <div class="princess"></div>
-        </div>
+  <div class="app">
+    <section class="panel">
+      <div class="hero">
+        <h1>Guardianes de la Topografía</h1>
+        <p class="subtitle">Aventura tipo Mario Bros con 5 preguntas y obstáculos reales para saltar. Avanzas por el escenario, respondes retos y debes evitar cajas, púas y tuberías para llegar a la meta.</p>
+        <div class="badge">5 retos + obstáculos de salto</div>
       </div>
 
       <div class="content">
-        <div id="startScreen" class="start-screen">
+        <div id="startScreen">
           <div class="card">
-            <h2>Misión del juego</h2>
-            <p class="canvas-note">El Reino del Levantamiento ha perdido la precisión de sus caminos. Los estudiantes serán guardianes que deberán superar retos matemáticos y topográficos para restaurar el orden.</p>
-            <button class="btn btn-primary" onclick="startGame()">Iniciar aventura</button>
-          </div>
-
-          <div class="card">
-            <h3>Cómo se juega</h3>
-            <p class="canvas-note">Responde preguntas, observa los elementos visuales, gana puntos, conserva tus vidas y llega hasta el final. Este recurso sirve como apertura de clase o actividad motivacional.</p>
+            <h2>Cómo se juega</h2>
+            <p class="small">Muévete por el escenario con los botones o con el teclado. Debes saltar obstáculos y llegar a cada punto dorado. Allí aparecerá una pregunta. Si respondes bien, ganas punto; si fallas, recibes retroalimentación y sigues jugando.</p>
+            <button class="button primary" onclick="startGame()">Comenzar aventura</button>
           </div>
         </div>
 
         <div id="gameScreen" class="hidden">
-          <div class="topbar">
-            <div>
-              <div id="levelTitle" style="font-size: 1.2rem; font-weight: 800;"></div>
-              <div id="levelIntro" class="small" style="margin-top: 6px;"></div>
+          <div class="hud">
+            <div class="hud-box"><div class="hud-label">Puntaje</div><div id="scoreBox" class="hud-value">0</div></div>
+            <div class="hud-box"><div class="hud-label">Vidas</div><div id="livesBox" class="hud-value">3</div></div>
+            <div class="hud-box"><div class="hud-label">Meta</div><div id="goalBox" class="hud-value">0%</div></div>
+            <div class="hud-box"><div class="hud-label">Reto</div><div id="challengeBox" class="hud-value">1</div></div>
+            <div class="hud-box"><div class="hud-label">Posición</div><div id="positionBox" class="hud-value">0 m</div></div>
+            <div class="hud-box"><div class="hud-label">Obstáculos</div><div id="obstacleBox" class="hud-value">6</div></div>
+          </div>
+
+          <div class="game-shell">
+            <div class="world" id="world">
+              <div class="sun"></div>
+              <div class="cloud c1"></div>
+              <div class="cloud c2"></div>
+              <div class="cloud c3"></div>
+              <div class="mountain m1"></div>
+              <div class="mountain m2"></div>
+              <div class="mountain m3"></div>
+
+              <div class="world-track" id="worldTrack">
+                <div class="ground"></div>
+
+                <div class="tile coin-block" style="left:340px;">?</div>
+                <div class="tile stone-block" style="left:620px;">◼</div>
+                <div class="tile coin-block" style="left:860px;">?</div>
+                <div class="tile stone-block" style="left:1210px;">◼</div>
+                <div class="tile coin-block" style="left:1500px;">?</div>
+                <div class="tile stone-block" style="left:1860px;">◼</div>
+                <div class="tile coin-block" style="left:2200px;">?</div>
+
+                <div class="obstacle" style="left:470px;"><div class="crate"></div></div>
+                <div class="obstacle" style="left:770px;"><div class="spike"></div></div>
+                <div class="obstacle" style="left:1030px;"><div class="pipe"></div></div>
+                <div class="obstacle" style="left:1380px;"><div class="crate"></div></div>
+                <div class="obstacle" style="left:1740px;"><div class="spike"></div></div>
+                <div class="obstacle" style="left:2080px;"><div class="pipe"></div></div>
+
+                <div class="marker" id="marker0" style="left:300px;">1</div>
+                <div class="marker" id="marker1" style="left:820px;">2</div>
+                <div class="marker" id="marker2" style="left:1170px;">3</div>
+                <div class="marker" id="marker3" style="left:1640px;">4</div>
+                <div class="marker" id="marker4" style="left:2350px;">5</div>
+                <div class="flag" style="left:2550px;"></div>
+
+                <div class="player" id="player">
+                  <div class="cap"></div>
+                  <div class="head"></div>
+                  <div class="body"></div>
+                  <div class="arm1"></div>
+                  <div class="arm2"></div>
+                  <div class="leg1"></div>
+                  <div class="leg2"></div>
+                </div>
+              </div>
             </div>
-            <div class="hearts" id="hearts"></div>
-          </div>
 
-          <div class="progress-wrap">
-            <div class="stats">
-              <div class="small">Progreso general</div>
-              <div class="small" id="progressText">0%</div>
+            <div class="controls">
+              <button class="button blue" onclick="movePlayer(-60)">⬅ Izquierda</button>
+              <button class="button secondary" onclick="jumpPlayer()">⬆ Saltar</button>
+              <button class="button blue" onclick="movePlayer(60)">➡ Derecha</button>
+              <div class="key">Teclado: A / D o ← / → para avanzar · W / espacio para saltar</div>
             </div>
-            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-          </div>
-
-          <div class="card">
-            <strong>Concepto clave:</strong>
-            <div id="levelConcept" class="canvas-note" style="margin-top: 8px;"></div>
-          </div>
-
-          <div id="visualBox" class="visual-box"></div>
-
-          <div class="card">
-            <div id="questionCounter" class="small"></div>
-            <div id="questionText" class="question" style="margin-top: 8px;"></div>
-            <div id="options" class="options"></div>
-            <div id="feedback" class="feedback"></div>
           </div>
         </div>
 
-        <div id="resultScreen" class="result-screen hidden">
+        <div id="resultScreen" class="hidden">
           <div class="card" style="text-align:center;">
-            <div style="font-size: 3rem;">🏆</div>
-            <h2>Misión completada</h2>
-            <p id="finalMessage" class="canvas-note"></p>
-
-            <div class="result-grid">
-              <div class="result-box">
-                <div class="small">Puntaje</div>
-                <div class="big" id="finalScore"></div>
-              </div>
-              <div class="result-box">
-                <div class="small">Vidas restantes</div>
-                <div class="big" id="finalHearts"></div>
-              </div>
-              <div class="result-box">
-                <div class="small">Resultado</div>
-                <div class="big" style="font-size:1.2rem; color:#fde68a;">Guardián en formación</div>
-              </div>
+            <div class="crown">🏁</div>
+            <h2>Llegaste al final</h2>
+            <p id="finalMessage" class="small"></p>
+            <div class="result-boxes">
+              <div class="result-box"><div class="small">Puntaje</div><div id="finalScore" class="big">0</div></div>
+              <div class="result-box"><div class="small">Vidas</div><div id="finalLives" class="big">0</div></div>
+              <div class="result-box"><div class="small">Retos</div><div id="finalChallenges" class="big">0/5</div></div>
             </div>
-
-            <button class="btn btn-blue" onclick="resetGame()">Jugar otra vez</button>
+            <button class="button primary" onclick="resetGame()">Jugar otra vez</button>
           </div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="panel side-panel">
-      <h2 class="side-title">Diseño pedagógico</h2>
+    <aside class="panel side">
       <div class="card">
-        <strong>Narrativa</strong>
-        <p class="canvas-note">Los estudiantes asumen el rol de guardianes del conocimiento topográfico que deben restaurar la precisión de los caminos del reino.</p>
+        <h3>Qué mejora tiene esta versión</h3>
+        <p class="small">Ahora el personaje no solo avanza: también debe saltar obstáculos colocados a lo largo del recorrido. El juego tiene 5 preguntas distribuidas en el escenario y mayor sensación de plataforma.</p>
       </div>
       <div class="card">
-        <strong>Problema detectado</strong>
-        <p class="canvas-note">Dificultades en unidades, triángulos, pendiente, visualización espacial y poca seguridad al resolver ejercicios introductorios.</p>
+        <h3>Ruta del juego</h3>
+        <div class="mini-level"><div class="mini-icon">1</div><div><strong>Unidad correcta</strong><br><span class="small">Escoger magnitudes adecuadas.</span></div></div>
+        <div class="mini-level"><div class="mini-icon">2</div><div><strong>Conversión</strong><br><span class="small">Pasar de kilómetros a metros.</span></div></div>
+        <div class="mini-level"><div class="mini-icon">3</div><div><strong>Pitágoras</strong><br><span class="small">Aplicar triángulo rectángulo.</span></div></div>
+        <div class="mini-level"><div class="mini-icon">4</div><div><strong>Pendiente</strong><br><span class="small">Interpretar desnivel.</span></div></div>
+        <div class="mini-level"><div class="mini-icon">5</div><div><strong>Decisión</strong><br><span class="small">Comparar procedimiento y unidades.</span></div></div>
       </div>
       <div class="card">
-        <strong>Evidencia de logro</strong>
-        <p class="canvas-note">Mayor participación, mejor argumentación y capacidad para resolver problemas básicos con sentido matemático.</p>
+        <h3>Para GitHub</h3>
+        <p class="small">Guárdalo como <strong>index.html</strong>. No necesita instalar nada. Solo súbelo al repositorio y se ejecutará en GitHub Pages.</p>
       </div>
+    </aside>
+  </div>
 
-      <h3>Niveles del juego</h3>
-      <div class="level-item"><div class="icon">📏</div><div><strong>Nivel 1</strong><br><span class="small">Unidades del terreno y magnitudes básicas.</span></div></div>
-      <div class="level-item"><div class="icon">📐</div><div><strong>Nivel 2</strong><br><span class="small">Triángulos, Pitágoras y pendiente.</span></div></div>
-      <div class="level-item"><div class="icon">⛰️</div><div><strong>Nivel 3</strong><br><span class="small">Decisión topográfica y aplicación de conceptos.</span></div></div>
-
-      <div class="footer-note">Sube este archivo como <strong>index.html</strong> en tu repositorio para que GitHub Pages lo muestre correctamente.</div>
+  <div class="question-modal" id="questionModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <strong id="modalStep">Reto 1</strong>
+      </div>
+      <div class="modal-body">
+        <div class="visual-box" id="visualBox"></div>
+        <div class="question-title" id="questionText"></div>
+        <div class="answers" id="answersBox"></div>
+        <div class="feedback" id="feedbackBox"></div>
+      </div>
     </div>
   </div>
 
   <script>
-    const levels = [
+    const answerStyles = [
+      { cls: 'a1', shape: '▲' },
+      { cls: 'a2', shape: '◆' },
+      { cls: 'a3', shape: '●' },
+      { cls: 'a4', shape: '■' }
+    ];
+
+    const challenges = [
       {
-        title: 'Nivel 1: Unidades del terreno',
-        intro: 'Antes de medir el terreno, un guardián debe reconocer correctamente las unidades y conceptos básicos.',
-        concept: 'Refuerza el uso correcto de metros, centímetros, kilómetros y la interpretación básica de distancias.',
+        x: 300,
         visual: 'units',
-        questions: [
-          {
-            prompt: '¿Qué unidad es la más adecuada para expresar el ancho de una vía urbana?',
-            options: ['Milímetros', 'Metros', 'Kilómetros', 'Grados'],
-            answer: 1,
-            explanation: 'Para dimensiones como ancho de vías, la unidad más práctica y común es el metro (m).'
-          },
-          {
-            prompt: 'Si una distancia es 2.5 km, ¿cuántos metros son?',
-            options: ['25 m', '250 m', '2 500 m', '25 000 m'],
-            answer: 2,
-            explanation: '1 km = 1000 m, por tanto 2.5 km = 2500 m.'
-          },
-          {
-            prompt: '¿Cuál de estos pares de unidades pertenece a longitud?',
-            options: ['m y cm', 'm² y ha', 'grados y radianes', 'm³ y L'],
-            answer: 0,
-            explanation: 'Metro y centímetro son unidades de longitud.'
-          }
-        ]
+        question: '¿Qué unidad es la más adecuada para expresar el ancho de una vía urbana?',
+        options: ['Milímetros', 'Metros', 'Kilómetros', 'Grados'],
+        answer: 1,
+        explanation: 'El ancho de una vía se expresa normalmente en metros, porque es una dimensión lineal de escala intermedia.'
       },
       {
-        title: 'Nivel 2: Triángulos y ángulos',
-        intro: 'Los caminos del reino se deforman. Para orientarse, el guardián debe usar trigonometría y geometría básica.',
-        concept: 'Fortalece la comprensión de triángulos rectángulos, pendiente y relaciones geométricas simples.',
+        x: 820,
+        visual: 'conversion',
+        question: 'Si una distancia es 2.5 km, ¿cuántos metros son?',
+        options: ['25 m', '250 m', '2 500 m', '25 000 m'],
+        answer: 2,
+        explanation: 'Como 1 km = 1000 m, entonces 2.5 km equivalen a 2500 m.'
+      },
+      {
+        x: 1170,
         visual: 'triangle',
-        questions: [
-          {
-            prompt: 'En un triángulo rectángulo, si los catetos miden 3 m y 4 m, la hipotenusa mide:',
-            options: ['5 m', '6 m', '7 m', '12 m'],
-            answer: 0,
-            explanation: 'Por Pitágoras: 3² + 4² = 5².'
-          },
-          {
-            prompt: 'Si avanzas 10 m horizontalmente y subes 2 m, la pendiente porcentual es:',
-            options: ['2 %', '5 %', '20 %', '200 %'],
-            answer: 2,
-            explanation: 'Pendiente (%) = (desnivel / distancia horizontal) × 100 = (2/10)×100 = 20 %.'
-          },
-          {
-            prompt: '¿Qué herramienta matemática ayuda a relacionar lados y ángulos en topografía básica?',
-            options: ['Trigonometría', 'Ortografía', 'Estadística descriptiva', 'Álgebra booleana'],
-            answer: 0,
-            explanation: 'La trigonometría permite analizar distancias, ángulos y alturas.'
-          }
-        ]
+        question: 'En un triángulo rectángulo, si los catetos miden 3 m y 4 m, la hipotenusa mide:',
+        options: ['5 m', '6 m', '7 m', '12 m'],
+        answer: 0,
+        explanation: 'Por Pitágoras: 3² + 4² = 9 + 16 = 25, así que la hipotenusa es 5 m.'
       },
       {
-        title: 'Nivel 3: Decisión topográfica',
-        intro: 'Ahora debes aplicar lo aprendido para escoger la mejor interpretación de una situación básica en campo.',
-        concept: 'Integra visualización espacial, lógica matemática y lectura de problemas sencillos.',
-        visual: 'mountain',
-        questions: [
-          {
-            prompt: 'Para calcular una distancia inaccesible usando un triángulo, primero necesitas comprender:',
-            options: ['Relaciones geométricas y ángulos', 'Solo colores del plano', 'Velocidad del viento', 'Resistencia del hormigón'],
-            answer: 0,
-            explanation: 'La base del cálculo topográfico inicial está en la geometría y la trigonometría.'
-          },
-          {
-            prompt: 'Si un grupo obtiene respuestas diferentes en un ejercicio sencillo, la mejor acción es:',
-            options: ['Ignorar el error', 'Comparar procedimiento y verificar unidades', 'Cambiar todos los datos', 'Responder al azar'],
-            answer: 1,
-            explanation: 'Verificar procedimiento y unidades ayuda a detectar el error y mejora la cooperación.'
-          },
-          {
-            prompt: '¿Qué señal muestra que el estudiante comprendió el tema?',
-            options: ['Memoriza una fórmula sin entenderla', 'Resuelve ejercicios básicos con seguridad', 'Evita participar', 'Solo copia resultados'],
-            answer: 1,
-            explanation: 'Comprender se evidencia cuando puede resolver ejercicios con seguridad y criterio.'
-          }
-        ]
+        x: 1640,
+        visual: 'slope',
+        question: 'Si avanzas 10 m horizontalmente y subes 2 m, la pendiente porcentual es:',
+        options: ['2 %', '5 %', '20 %', '200 %'],
+        answer: 2,
+        explanation: 'Pendiente = (desnivel / distancia horizontal) × 100 = (2/10) × 100 = 20 %.'
+      },
+      {
+        x: 2350,
+        visual: 'decision',
+        question: 'Si un grupo obtiene resultados diferentes en un ejercicio topográfico sencillo, la mejor acción es:',
+        options: ['Ignorar el error', 'Comparar procedimiento y verificar unidades', 'Borrar todos los datos', 'Responder al azar'],
+        answer: 1,
+        explanation: 'Comparar el procedimiento y revisar unidades ayuda a detectar el origen del error.'
       }
     ];
 
-    let levelIndex = 0;
-    let questionIndex = 0;
+    const obstacles = [
+      { x: 470, w: 60, h: 60 },
+      { x: 770, w: 90, h: 54 },
+      { x: 1030, w: 86, h: 92 },
+      { x: 1380, w: 60, h: 60 },
+      { x: 1740, w: 90, h: 54 },
+      { x: 2080, w: 86, h: 92 }
+    ];
+
+    let playerX = 90;
+    let baseBottom = 96;
+    let jumpBottom = 216;
+    let isJumping = false;
     let score = 0;
-    let hearts = 3;
-    let locked = false;
+    let lives = 3;
+    let currentChallenge = 0;
+    let gameStarted = false;
+    let questionOpen = false;
+    let challengeResolved = [false, false, false, false, false];
 
-    function totalQuestions() {
-      return levels.reduce((sum, lvl) => sum + lvl.questions.length, 0);
-    }
-
-    function answeredCount() {
-      let count = 0;
-      for (let i = 0; i < levelIndex; i++) count += levels[i].questions.length;
-      count += questionIndex;
-      return count;
-    }
+    const player = document.getElementById('player');
+    const worldTrack = document.getElementById('worldTrack');
+    const world = document.getElementById('world');
 
     function startGame() {
+      gameStarted = true;
       document.getElementById('startScreen').classList.add('hidden');
       document.getElementById('resultScreen').classList.add('hidden');
       document.getElementById('gameScreen').classList.remove('hidden');
-      renderGame();
+      updateHUD();
+      renderPlayer();
     }
 
-    function renderHearts() {
-      const heartsBox = document.getElementById('hearts');
-      heartsBox.innerHTML = '';
-      for (let i = 0; i < hearts; i++) {
-        const div = document.createElement('div');
-        div.className = 'heart';
-        heartsBox.appendChild(div);
+    function resetGame() {
+      playerX = 90;
+      isJumping = false;
+      score = 0;
+      lives = 3;
+      currentChallenge = 0;
+      questionOpen = false;
+      challengeResolved = [false, false, false, false, false];
+      gameStarted = false;
+      player.style.bottom = baseBottom + 'px';
+      document.getElementById('questionModal').classList.remove('show');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('startScreen').classList.remove('hidden');
+      challenges.forEach((_, i) => {
+        document.getElementById('marker' + i).classList.remove('done');
+        document.getElementById('marker' + i).textContent = String(i + 1);
+      });
+      updateHUD();
+      renderPlayer();
+    }
+
+    function updateHUD() {
+      document.getElementById('scoreBox').textContent = score;
+      document.getElementById('livesBox').textContent = lives;
+      const progress = Math.min(100, Math.round(((playerX - 90) / (2550 - 90)) * 100));
+      document.getElementById('goalBox').textContent = progress + '%';
+      document.getElementById('challengeBox').textContent = Math.min(currentChallenge + 1, challenges.length);
+      document.getElementById('positionBox').textContent = Math.max(0, Math.round((playerX - 90) / 10)) + ' m';
+    }
+
+    function renderPlayer() {
+      player.style.left = playerX + 'px';
+      const viewportCenter = world.clientWidth / 2;
+      const maxTranslate = 2800 - world.clientWidth;
+      let translate = playerX - viewportCenter;
+      if (translate < 0) translate = 0;
+      if (translate > maxTranslate) translate = maxTranslate;
+      worldTrack.style.transform = `translateX(${-translate}px)`;
+      updateHUD();
+      checkChallenge();
+      checkFinish();
+    }
+
+    function collidesObstacle(nextX) {
+      const playerLeft = nextX;
+      const playerRight = nextX + 54;
+      for (const obs of obstacles) {
+        const obsLeft = obs.x;
+        const obsRight = obs.x + obs.w;
+        if (playerRight > obsLeft && playerLeft < obsRight) {
+          if (!isJumping) return obs;
+        }
       }
+      return null;
+    }
+
+    function movePlayer(dx) {
+      if (!gameStarted || questionOpen) return;
+      let nextX = playerX + dx;
+      if (nextX < 40) nextX = 40;
+      if (nextX > 2620) nextX = 2620;
+
+      const hit = collidesObstacle(nextX);
+      if (hit) {
+        if (dx > 0) nextX = hit.x - 54;
+        else nextX = hit.x + hit.w;
+      }
+
+      if (currentChallenge < challenges.length) {
+        const stopX = challenges[currentChallenge].x;
+        if (!challengeResolved[currentChallenge] && dx > 0 && nextX >= stopX) {
+          playerX = stopX;
+          renderPlayer();
+          openChallenge(currentChallenge);
+          return;
+        }
+      }
+
+      playerX = nextX;
+      renderPlayer();
+    }
+
+    function jumpPlayer() {
+      if (!gameStarted || questionOpen || isJumping) return;
+      isJumping = true;
+      player.style.transition = 'bottom .18s ease-out';
+      player.style.bottom = jumpBottom + 'px';
+      setTimeout(() => {
+        player.style.transition = 'bottom .24s ease-in';
+        player.style.bottom = baseBottom + 'px';
+      }, 240);
+      setTimeout(() => {
+        isJumping = false;
+      }, 520);
+    }
+
+    function checkChallenge() {
+      if (currentChallenge >= challenges.length) return;
+      const target = challenges[currentChallenge].x;
+      if (Math.abs(playerX - target) < 4 && !challengeResolved[currentChallenge] && !questionOpen) {
+        openChallenge(currentChallenge);
+      }
+    }
+
+    function openChallenge(index) {
+      questionOpen = true;
+      const data = challenges[index];
+      document.getElementById('modalStep').textContent = 'Reto ' + (index + 1);
+      document.getElementById('questionText').textContent = data.question;
+      renderVisual(data.visual);
+
+      const answersBox = document.getElementById('answersBox');
+      const feedback = document.getElementById('feedbackBox');
+      answersBox.innerHTML = '';
+      feedback.className = 'feedback';
+      feedback.innerHTML = '';
+
+      data.options.forEach((opt, i) => {
+        const meta = answerStyles[i];
+        const btn = document.createElement('button');
+        btn.className = `answer ${meta.cls}`;
+        btn.innerHTML = `<div class="shape">${meta.shape}</div><div>${opt}</div>`;
+        btn.onclick = () => answerChallenge(i, btn, index);
+        answersBox.appendChild(btn);
+      });
+
+      document.getElementById('questionModal').classList.add('show');
     }
 
     function renderVisual(type) {
       const box = document.getElementById('visualBox');
       if (type === 'units') {
-        box.className = 'visual-box visual-units';
         box.innerHTML = `
-          <div class="line"></div>
-          <div class="stake"></div>
-          <div class="mark m0">0 m</div>
-          <div class="mark m5">5 m</div>
-          <div class="mark m10">10 m</div>
-          <div class="mark m15">15 m</div>
-          <div class="mission">Misión: identifica unidades</div>
+          <svg viewBox="0 0 900 260" aria-label="Escena de medición">
+            <rect width="900" height="260" fill="#dbeafe"/>
+            <rect y="200" width="900" height="60" fill="#86efac"/>
+            <line x1="100" y1="165" x2="760" y2="165" stroke="#334155" stroke-width="8"/>
+            <line x1="120" y1="165" x2="120" y2="80" stroke="#92400e" stroke-width="10"/>
+            <text x="105" y="194" font-size="26" fill="#334155" font-weight="800">0 m</text>
+            <text x="292" y="194" font-size="26" fill="#334155" font-weight="800">5 m</text>
+            <text x="470" y="194" font-size="26" fill="#334155" font-weight="800">10 m</text>
+            <text x="645" y="194" font-size="26" fill="#334155" font-weight="800">15 m</text>
+          </svg>
+        `;
+      } else if (type === 'conversion') {
+        box.innerHTML = `
+          <svg viewBox="0 0 900 260" aria-label="Conversión de distancia">
+            <rect width="900" height="260" fill="#e0f2fe"/>
+            <rect x="90" y="82" rx="24" ry="24" width="220" height="94" fill="#38bdf8"/>
+            <rect x="344" y="82" rx="24" ry="24" width="220" height="94" fill="#a855f7"/>
+            <rect x="598" y="82" rx="24" ry="24" width="220" height="94" fill="#22c55e"/>
+            <text x="165" y="136" font-size="34" fill="white" font-weight="900">2.5 km</text>
+            <text x="386" y="136" font-size="32" fill="white" font-weight="900">× 1000</text>
+            <text x="650" y="136" font-size="34" fill="white" font-weight="900">2500 m</text>
+          </svg>
         `;
       } else if (type === 'triangle') {
-        box.className = 'visual-box visual-triangle';
         box.innerHTML = `
-          <svg viewBox="0 0 600 220" aria-label="Triángulo topográfico">
-            <rect width="600" height="220" fill="url(#bg)"/>
-            <defs>
-              <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#dbeafe"/>
-                <stop offset="100%" stop-color="#e9d5ff"/>
-              </linearGradient>
-            </defs>
-            <line x1="80" y1="180" x2="360" y2="180" stroke="#334155" stroke-width="5"/>
-            <line x1="360" y1="180" x2="360" y2="70" stroke="#334155" stroke-width="5"/>
-            <line x1="80" y1="180" x2="360" y2="70" stroke="#7c3aed" stroke-width="6"/>
-            <rect x="345" y="165" width="15" height="15" fill="#334155"/>
-            <text x="180" y="205" font-size="20" fill="#334155">10 m</text>
-            <text x="378" y="130" font-size="20" fill="#334155">2 m</text>
-            <text x="182" y="112" font-size="20" fill="#7c3aed">pendiente</text>
+          <svg viewBox="0 0 900 260" aria-label="Triángulo topográfico">
+            <rect width="900" height="260" fill="#ede9fe"/>
+            <line x1="140" y1="210" x2="500" y2="210" stroke="#334155" stroke-width="8"/>
+            <line x1="500" y1="210" x2="500" y2="90" stroke="#334155" stroke-width="8"/>
+            <line x1="140" y1="210" x2="500" y2="90" stroke="#7c3aed" stroke-width="10"/>
+            <rect x="480" y="190" width="20" height="20" fill="#334155"/>
+            <text x="286" y="238" font-size="28" fill="#334155" font-weight="900">4 m</text>
+            <text x="518" y="160" font-size="28" fill="#334155" font-weight="900">3 m</text>
+            <text x="280" y="132" font-size="28" fill="#7c3aed" font-weight="900">hipotenusa</text>
+          </svg>
+        `;
+      } else if (type === 'slope') {
+        box.innerHTML = `
+          <svg viewBox="0 0 900 260" aria-label="Pendiente del terreno">
+            <rect width="900" height="260" fill="#e0e7ff"/>
+            <line x1="140" y1="200" x2="560" y2="200" stroke="#334155" stroke-width="8"/>
+            <line x1="560" y1="200" x2="560" y2="120" stroke="#334155" stroke-width="8"/>
+            <line x1="140" y1="200" x2="560" y2="120" stroke="#22c55e" stroke-width="10"/>
+            <text x="300" y="232" font-size="28" fill="#334155" font-weight="900">10 m</text>
+            <text x="585" y="165" font-size="28" fill="#334155" font-weight="900">2 m</text>
+            <text x="292" y="128" font-size="28" fill="#16a34a" font-weight="900">pendiente</text>
           </svg>
         `;
       } else {
-        box.className = 'visual-box visual-mountain';
         box.innerHTML = `
-          <svg viewBox="0 0 600 220" aria-label="Escena de montaña">
-            <rect width="600" height="220" fill="#dcfce7"/>
-            <circle cx="90" cy="55" r="28" fill="#fde047"/>
-            <polygon points="20,200 130,90 240,200" fill="#65a30d"/>
-            <polygon points="150,200 320,50 480,200" fill="#16a34a"/>
-            <polygon points="370,200 470,110 580,200" fill="#84cc16"/>
-            <line x1="80" y1="185" x2="180" y2="120" stroke="#0f172a" stroke-width="5" stroke-dasharray="9 6"/>
-            <circle cx="80" cy="185" r="7" fill="#0f172a"/>
-            <circle cx="180" cy="120" r="7" fill="#0f172a"/>
-            <text x="195" y="124" font-size="18" fill="#0f172a">distancia estimada</text>
+          <svg viewBox="0 0 900 260" aria-label="Decisión de campo">
+            <rect width="900" height="260" fill="#dcfce7"/>
+            <circle cx="120" cy="54" r="28" fill="#fde047"/>
+            <polygon points="40,220 180,90 320,220" fill="#65a30d"/>
+            <polygon points="250,220 460,48 680,220" fill="#16a34a"/>
+            <line x1="120" y1="198" x2="250" y2="130" stroke="#0f172a" stroke-width="7" stroke-dasharray="12 8"/>
+            <circle cx="120" cy="198" r="8" fill="#0f172a"/>
+            <circle cx="250" cy="130" r="8" fill="#0f172a"/>
+            <rect x="570" y="34" rx="18" ry="18" width="240" height="76" fill="rgba(255,255,255,.82)"/>
+            <text x="596" y="66" font-size="25" fill="#0f172a" font-weight="900">Compara procedimientos</text>
+            <text x="612" y="92" font-size="18" fill="#334155">y revisa unidades</text>
           </svg>
         `;
       }
     }
 
-    function renderGame() {
-      locked = false;
-      const level = levels[levelIndex];
-      const question = level.questions[questionIndex];
-      document.getElementById('levelTitle').textContent = level.title;
-      document.getElementById('levelIntro').textContent = level.intro;
-      document.getElementById('levelConcept').textContent = level.concept;
-      document.getElementById('questionCounter').textContent = `Pregunta ${questionIndex + 1} de ${level.questions.length}`;
-      document.getElementById('questionText').textContent = question.prompt;
-      renderHearts();
-      renderVisual(level.visual);
-
-      const progress = Math.round((answeredCount() / totalQuestions()) * 100);
-      document.getElementById('progressText').textContent = progress + '%';
-      document.getElementById('progressFill').style.width = progress + '%';
-
-      const optionsBox = document.getElementById('options');
-      const feedback = document.getElementById('feedback');
-      optionsBox.innerHTML = '';
-      feedback.className = 'feedback';
-      feedback.innerHTML = '';
-
-      question.options.forEach((option, index) => {
-        const btn = document.createElement('button');
-        btn.className = 'option';
-        btn.textContent = option;
-        btn.onclick = () => selectOption(index, btn);
-        optionsBox.appendChild(btn);
-      });
-    }
-
-    function selectOption(index, btnElement) {
-      if (locked) return;
-      locked = true;
-
-      const level = levels[levelIndex];
-      const question = level.questions[questionIndex];
-      const options = document.querySelectorAll('.option');
-      const feedback = document.getElementById('feedback');
-
-      options.forEach((opt, i) => {
-        if (i === question.answer) opt.classList.add('correct');
+    function answerChallenge(choice, btn, index) {
+      const data = challenges[index];
+      const buttons = Array.from(document.querySelectorAll('.answer'));
+      const feedback = document.getElementById('feedbackBox');
+      buttons.forEach((b, i) => {
+        if (i !== choice) b.classList.add('dim');
+        if (i === data.answer) b.classList.add('correct');
       });
 
-      if (index === question.answer) {
-        score++;
-        feedback.innerHTML = `<strong class="correct">¡Correcto!</strong><br>${question.explanation}<br><button class="btn btn-secondary" onclick="nextQuestion()">Continuar</button>`;
+      if (choice === data.answer) {
+        score += 1;
+        challengeResolved[index] = true;
+        document.getElementById('marker' + index).classList.add('done');
+        document.getElementById('marker' + index).textContent = '✓';
+        feedback.innerHTML = `<div class="good">¡Correcto!</div><div class="small" style="margin-top:8px;">${data.explanation}</div><button class="button secondary" style="margin-top:14px;" onclick="closeChallenge()">Seguir avanzando</button>`;
       } else {
-        hearts = Math.max(0, hearts - 1);
-        btnElement.classList.add('wrong');
-        feedback.innerHTML = `<strong class="wrong">Respuesta incorrecta.</strong><br>${question.explanation}<br><button class="btn btn-secondary" onclick="nextQuestion()">Continuar</button>`;
+        lives = Math.max(0, lives - 1);
+        btn.classList.add('wrong');
+        challengeResolved[index] = true;
+        document.getElementById('marker' + index).classList.add('done');
+        document.getElementById('marker' + index).textContent = '!';
+        feedback.innerHTML = `<div class="bad">Respuesta incorrecta</div><div class="small" style="margin-top:8px;">${data.explanation}</div><button class="button secondary" style="margin-top:14px;" onclick="closeChallenge()">Continuar con retroalimentación</button>`;
       }
-
-      renderHearts();
       feedback.classList.add('show');
+      updateHUD();
+      buttons.forEach(b => b.onclick = null);
     }
 
-    function nextQuestion() {
-      if (hearts === 0) {
-        finishGame();
-        return;
-      }
+    function closeChallenge() {
+      document.getElementById('questionModal').classList.remove('show');
+      questionOpen = false;
+      currentChallenge += 1;
+      updateHUD();
+      if (lives === 0) finishGame();
+    }
 
-      const level = levels[levelIndex];
-      if (questionIndex < level.questions.length - 1) {
-        questionIndex++;
-      } else if (levelIndex < levels.length - 1) {
-        levelIndex++;
-        questionIndex = 0;
-      } else {
-        finishGame();
-        return;
-      }
-      renderGame();
+    function checkFinish() {
+      if (playerX >= 2520) finishGame();
     }
 
     function finishGame() {
+      if (!document.getElementById('gameScreen') || !gameStarted) return;
+      gameStarted = false;
+      questionOpen = false;
+      document.getElementById('questionModal').classList.remove('show');
       document.getElementById('gameScreen').classList.add('hidden');
       document.getElementById('resultScreen').classList.remove('hidden');
-      const total = totalQuestions();
-      let msg = 'Vas en camino. Repite la misión y fortalece unidades, geometría y trigonometría.';
-      if (score >= 8) msg = '¡Excelente! Ya actúas como un guardián con criterio topográfico.';
-      else if (score >= 5) msg = 'Muy bien. Tienes una buena base y puedes reforzar algunos conceptos.';
-
+      let msg = 'Terminaste la aventura. Repite el recorrido para mejorar tu puntaje y dominar mejor los conceptos básicos de topografía.';
+      if (score >= 5 && lives >= 2) msg = '¡Excelente! Superaste los 5 retos y sorteaste los obstáculos como un verdadero guardián del reino.';
+      else if (score >= 3) msg = 'Muy bien. Llegaste a la meta con una buena base de unidades, pendiente y geometría.';
       document.getElementById('finalMessage').textContent = msg;
-      document.getElementById('finalScore').textContent = `${score}/${total}`;
-      document.getElementById('finalHearts').textContent = hearts;
+      document.getElementById('finalScore').textContent = score;
+      document.getElementById('finalLives').textContent = lives;
+      document.getElementById('finalChallenges').textContent = `${challengeResolved.filter(Boolean).length}/5`;
     }
 
-    function resetGame() {
-      levelIndex = 0;
-      questionIndex = 0;
-      score = 0;
-      hearts = 3;
-      locked = false;
-      document.getElementById('startScreen').classList.remove('hidden');
-      document.getElementById('gameScreen').classList.add('hidden');
-      document.getElementById('resultScreen').classList.add('hidden');
-    }
+    document.addEventListener('keydown', (e) => {
+      if (!gameStarted || questionOpen) return;
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') movePlayer(45);
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') movePlayer(-45);
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.key === ' ') {
+        e.preventDefault();
+        jumpPlayer();
+      }
+    });
+
+    updateHUD();
+    renderPlayer();
   </script>
 </body>
 </html>
