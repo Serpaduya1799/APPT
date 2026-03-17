@@ -1,984 +1,457 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Geoportal Azuay</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; height: 100vh; display: flex; }
-        .sidebar { 
-            width: 320px; 
-            background: #2c3e50; 
-            color: white; 
-            padding: 20px; 
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
-        .sidebar h1 { margin-bottom: 20px; font-size: 18px; text-align: center; }
-        .section { margin-bottom: 20px; }
-        .section h3 { color: #3498db; margin-bottom: 10px; font-size: 14px; }
-        #map { 
-            flex: 1; 
-            width: 100%;
-            height: 100vh;
-            background: #e8f4fd;
-        }
-        .btn { 
-            width: 100%; 
-            padding: 12px; 
-            margin: 5px 0; 
-            background: #3498db; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 14px;
-        }
-        .btn:hover { background: #2980b9; }
-        .btn.active { background: #e74c3c; }
-        .status { 
-            padding: 10px; 
-            margin: 10px 0; 
-            border-radius: 5px; 
-            font-size: 12px; 
-            text-align: center;
-        }
-        .status.success { background: #27ae60; color: white; }
-        .status.error { background: #e74c3c; color: white; }
-        .status.warning { background: #f39c12; color: white; }
-        .layer-item { 
-            margin: 8px 0; 
-            display: flex; 
-            align-items: center;
-        }
-        .layer-item input { margin-right: 10px; }
-        .layer-item label { cursor: pointer; font-size: 13px; }
-        .modal { 
-            display: none; 
-            position: fixed; 
-            z-index: 10000; 
-            left: 0; 
-            top: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.5); 
-        }
-        .modal-content { 
-            background: white; 
-            margin: 3% auto; 
-            padding: 25px; 
-            border-radius: 10px; 
-            width: 85%; 
-            max-width: 550px; 
-            max-height: 85vh; 
-            overflow-y: auto; 
-        }
-        .close { 
-            color: #aaa; 
-            float: right; 
-            font-size: 28px; 
-            font-weight: bold; 
-            cursor: pointer; 
-        }
-        .close:hover { color: #000; }
-        .form-group { margin: 15px 0; }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-            color: #2c3e50;
-        }
-        .form-group input, .form-group select, .form-group textarea { 
-            width: 100%; 
-            padding: 10px; 
-            border: 2px solid #ddd; 
-            border-radius: 5px; 
-            font-size: 14px;
-            box-sizing: border-box; 
-        }
-        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-            border-color: #3498db;
-            outline: none;
-        }
-        .coord-info {
-            background: #ecf0f1;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            border-left: 4px solid #3498db;
-        }
-        .coord-info h4 {
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        
-        .realtime-popup .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-        }
-        
-        .realtime-buffer {
-            animation: bufferPulse 3s infinite;
-        }
-        
-        @keyframes bufferPulse {
-            0% { opacity: 0.15; }
-            50% { opacity: 0.25; }
-            100% { opacity: 0.15; }
-        }
-    </style>
-</head>
-<body>
-    <div class="sidebar">
-        <h1>🗺️ Geoportal Azuay</h1>
-        
-        <div id="status" class="status warning">Iniciando sistema...</div>
-        
-        <div class="section">
-            <h3>🗂️ Capas</h3>
-            <div class="layer-item">
-                <input type="checkbox" id="layer-cantones" checked>
-                <label for="layer-cantones">Cantones del Azuay</label>
-                <div class="layer-item">
-                <input type="checkbox" id="layer-realtime" checked>
-                <label for="layer-realtime">📍 Datos en Tiempo Real</label>
-            </div>
+import React, { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, XCircle, Trophy, Ruler, Triangle, Mountain, RotateCcw, Map, Compass, Lightbulb } from 'lucide-react';
+
+const levels = [
+  {
+    id: 1,
+    title: 'Nivel 1: Unidades del terreno',
+    icon: Ruler,
+    color: 'from-sky-500 to-cyan-500',
+    intro: 'Antes de medir el terreno, un guardián debe reconocer correctamente las unidades y conceptos básicos.',
+    concept: 'Refuerza el uso correcto de metros, centímetros, kilómetros y la interpretación básica de distancias.',
+    questions: [
+      {
+        prompt: '¿Qué unidad es la más adecuada para expresar el ancho de una vía urbana?',
+        options: ['Milímetros', 'Metros', 'Kilómetros', 'Grados'],
+        answer: 1,
+        explanation: 'Para dimensiones como ancho de vías, la unidad más práctica y común es el metro (m).',
+      },
+      {
+        prompt: 'Si una distancia es 2.5 km, ¿cuántos metros son?',
+        options: ['25 m', '250 m', '2 500 m', '25 000 m'],
+        answer: 2,
+        explanation: '1 km = 1000 m, entonces 2.5 km = 2500 m.',
+      },
+      {
+        prompt: '¿Cuál de estos pares de unidades pertenece a longitud?',
+        options: ['m y cm', 'm² y ha', 'grados y radianes', 'm³ y L'],
+        answer: 0,
+        explanation: 'Metro y centímetro son unidades de longitud.',
+      },
+    ],
+  },
+  {
+    id: 2,
+    title: 'Nivel 2: Triángulos y ángulos',
+    icon: Triangle,
+    color: 'from-violet-500 to-fuchsia-500',
+    intro: 'Los caminos del reino se deforman. Para orientarse, el guardián debe usar trigonometría y geometría básica.',
+    concept: 'Fortalece la comprensión de triángulos rectángulos, pendiente y relaciones geométricas simples.',
+    questions: [
+      {
+        prompt: 'En un triángulo rectángulo, si los catetos miden 3 m y 4 m, la hipotenusa mide:',
+        options: ['5 m', '6 m', '7 m', '12 m'],
+        answer: 0,
+        explanation: 'Por Pitágoras: 3² + 4² = 5².',
+      },
+      {
+        prompt: 'Si avanzas 10 m horizontalmente y subes 2 m, la pendiente porcentual es:',
+        options: ['2 %', '5 %', '20 %', '200 %'],
+        answer: 2,
+        explanation: 'Pendiente (%) = (desnivel / distancia horizontal) × 100 = (2/10)×100 = 20 %.',
+      },
+      {
+        prompt: '¿Qué herramienta matemática ayuda a relacionar lados y ángulos en topografía básica?',
+        options: ['Trigonometría', 'Ortografía', 'Estadística descriptiva', 'Álgebra booleana'],
+        answer: 0,
+        explanation: 'La trigonometría permite analizar distancias, ángulos y alturas.',
+      },
+    ],
+  },
+  {
+    id: 3,
+    title: 'Nivel 3: Decisión topográfica',
+    icon: Mountain,
+    color: 'from-emerald-500 to-lime-500',
+    intro: 'Ahora debes aplicar lo aprendido para escoger la mejor interpretación de una situación básica en campo.',
+    concept: 'Integra visualización espacial, lógica matemática y lectura de problemas sencillos.',
+    questions: [
+      {
+        prompt: 'Para calcular una distancia inaccesible usando un triángulo, primero necesitas comprender:',
+        options: ['Relaciones geométricas y ángulos', 'Solo colores del plano', 'Velocidad del viento', 'Resistencia del hormigón'],
+        answer: 0,
+        explanation: 'La base del cálculo topográfico inicial está en la geometría y la trigonometría.',
+      },
+      {
+        prompt: 'Si un grupo obtiene respuestas diferentes en un ejercicio sencillo, la mejor acción es:',
+        options: ['Ignorar el error', 'Comparar procedimiento y verificar unidades', 'Cambiar todos los datos', 'Responder al azar'],
+        answer: 1,
+        explanation: 'Verificar procedimiento y unidades ayuda a detectar el error y mejora la cooperación.',
+      },
+      {
+        prompt: '¿Qué señal muestra que el estudiante comprendió el tema?',
+        options: ['Memoriza una fórmula sin entenderla', 'Resuelve ejercicios básicos con seguridad', 'Evita participar', 'Solo copia resultados'],
+        answer: 1,
+        explanation: 'Comprender se evidencia cuando puede resolver ejercicios con facilidad y criterio.',
+      },
+    ],
+  },
+];
+
+function VisualScene({ level }) {
+  if (level === 0) {
+    return (
+      <div className="relative h-56 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-sky-900 to-emerald-900 p-4">
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,white,transparent_20%),radial-gradient(circle_at_80%_15%,white,transparent_18%),radial-gradient(circle_at_50%_40%,white,transparent_15%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-emerald-700 to-transparent" />
+        <div className="absolute left-8 bottom-8 h-24 w-24 rounded-full bg-yellow-300/80 blur-xl" />
+        <div className="absolute left-10 bottom-10 h-16 w-16 rounded-full bg-yellow-200" />
+        <div className="absolute right-8 bottom-10 h-28 w-36 rounded-t-[100px] bg-slate-800" />
+        <div className="absolute right-20 bottom-20 h-14 w-14 rounded-full bg-fuchsia-300 shadow-lg" />
+        <div className="absolute left-1/2 bottom-7 h-5 w-48 -translate-x-1/2 rounded-full bg-amber-300/70" />
+        <div className="absolute left-1/2 bottom-10 -translate-x-1/2 text-center text-white">
+          <div className="text-lg font-bold">Guardianes de la Topografía</div>
+          <div className="text-sm text-slate-200">Aprende jugando con unidades, ángulos y visualización espacial</div>
         </div>
-            <div class="layer-item">
-                <input type="checkbox" id="layer-parroquias" checked>
-                <label for="layer-parroquias">Parroquias Azuay</label>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="layer-edificios">
-                <label for="layer-edificios">Edificios</label>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="layer-vias">
-                <label for="layer-vias">Vías Cuenca</label>
-            </div>
-            <div class="layer-item">
-                <input type="checkbox" id="layer-usos">
-                <label for="layer-usos">Usos de Suelo</label>
-            </div>
+      </div>
+    );
+  }
+
+  if (level === 1) {
+    return (
+      <div className="relative h-56 overflow-hidden rounded-3xl bg-gradient-to-br from-sky-100 to-cyan-200 p-4">
+        <div className="absolute bottom-0 left-0 right-0 h-28 bg-emerald-300" />
+        <div className="absolute left-10 bottom-16 h-24 w-3 bg-amber-700" />
+        <div className="absolute left-7 bottom-36 text-xs font-bold text-slate-700">Jalón</div>
+        <div className="absolute left-12 bottom-16 h-2 w-64 bg-slate-700" />
+        <div className="absolute left-12 bottom-14 w-64 flex justify-between text-xs font-semibold text-slate-700">
+          <span>0 m</span><span>5 m</span><span>10 m</span><span>15 m</span>
         </div>
-        
-        <div class="section">
-            <h3>📊 Herramientas</h3>
-            <button class="btn" id="btnAddData">📍 Ingresar Datos</button>
-            <button class="btn" id="btnShowData">📋 Ver Datos</button>
-            <button class="btn" id="btnClear">🧹 Limpiar Marcadores</button>
+        <div className="absolute right-12 bottom-20 rounded-2xl bg-white/80 px-3 py-2 shadow">
+          <div className="text-sm font-bold text-slate-800">Misión</div>
+          <div className="text-xs text-slate-600">Identifica unidades correctas</div>
         </div>
+      </div>
+    );
+  }
+
+  if (level === 2) {
+    return (
+      <div className="relative h-56 overflow-hidden rounded-3xl bg-gradient-to-br from-violet-100 to-fuchsia-200 p-4">
+        <svg viewBox="0 0 500 220" className="h-full w-full">
+          <line x1="60" y1="180" x2="320" y2="180" stroke="#334155" strokeWidth="4" />
+          <line x1="320" y1="180" x2="320" y2="70" stroke="#334155" strokeWidth="4" />
+          <line x1="60" y1="180" x2="320" y2="70" stroke="#8b5cf6" strokeWidth="5" />
+          <rect x="304" y="164" width="16" height="16" fill="#334155" />
+          <text x="170" y="205" fontSize="18" fill="#334155">10 m</text>
+          <text x="335" y="130" fontSize="18" fill="#334155">2 m</text>
+          <text x="175" y="115" fontSize="18" fill="#7c3aed">pendiente</text>
+        </svg>
+        <div className="absolute right-4 top-4 rounded-2xl bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow">
+          Triángulo + pendiente
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-56 overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-100 to-lime-200 p-4">
+      <svg viewBox="0 0 500 220" className="h-full w-full">
+        <polygon points="20,190 110,90 210,190" fill="#65a30d" />
+        <polygon points="120,190 250,60 390,190" fill="#16a34a" />
+        <polygon points="300,190 390,110 470,190" fill="#84cc16" />
+        <circle cx="80" cy="60" r="26" fill="#fde047" />
+        <line x1="65" y1="180" x2="150" y2="120" stroke="#0f172a" strokeWidth="4" strokeDasharray="7 5" />
+        <circle cx="65" cy="180" r="7" fill="#0f172a" />
+        <circle cx="150" cy="120" r="7" fill="#0f172a" />
+        <text x="162" y="124" fontSize="16" fill="#0f172a">distancia estimada</text>
+      </svg>
+      <div className="absolute right-4 top-4 rounded-2xl bg-white/80 px-3 py-2 text-xs font-semibold text-slate-700 shadow">
+        Decide y aplica
+      </div>
     </div>
-    
-    <div id="map"></div>
+  );
+}
 
-    <!-- Modal para datos -->
-    <div id="dataModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2 style="color: #2c3e50; margin-bottom: 20px;">📍 Datos Geotécnicos</h2>
-            
-            <div class="coord-info">
-                <h4>Coordenadas del Punto</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: monospace;">
-                    <div><strong>Latitud:</strong> <span id="coordLat">-</span></div>
-                    <div><strong>Longitud:</strong> <span id="coordLng">-</span></div>
-                    <div><strong>UTM X:</strong> <span id="coordUtmX">-</span></div>
-                    <div><strong>UTM Y:</strong> <span id="coordUtmY">-</span></div>
+export default function GuardianesTopografiaGame() {
+  const [started, setStarted] = useState(false);
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [score, setScore] = useState(0);
+  const [hearts, setHearts] = useState(3);
+  const [finished, setFinished] = useState(false);
+
+  const currentLevel = levels[levelIndex];
+  const currentQuestion = currentLevel?.questions[questionIndex];
+  const totalQuestions = levels.reduce((acc, lvl) => acc + lvl.questions.length, 0);
+  const answeredCount = levels.slice(0, levelIndex).reduce((acc, lvl) => acc + lvl.questions.length, 0) + questionIndex;
+  const progress = started ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+
+  const message = useMemo(() => {
+    if (score >= 8) return '¡Excelente! Ya actúas como un guardián con criterio topográfico.';
+    if (score >= 5) return 'Muy bien. Tienes una buena base y puedes reforzar algunos conceptos.';
+    return 'Vas en camino. Repite la misión y fortalece trigonometría, geometría y unidades.';
+  }, [score]);
+
+  function handleSelect(index) {
+    if (showFeedback) return;
+    setSelected(index);
+    setShowFeedback(true);
+    if (index === currentQuestion.answer) {
+      setScore((s) => s + 1);
+    } else {
+      setHearts((h) => Math.max(0, h - 1));
+    }
+  }
+
+  function handleNext() {
+    if (hearts === 0) {
+      setFinished(true);
+      return;
+    }
+
+    setSelected(null);
+    setShowFeedback(false);
+
+    if (questionIndex < currentLevel.questions.length - 1) {
+      setQuestionIndex((q) => q + 1);
+      return;
+    }
+
+    if (levelIndex < levels.length - 1) {
+      setLevelIndex((l) => l + 1);
+      setQuestionIndex(0);
+      return;
+    }
+
+    setFinished(true);
+  }
+
+  function resetGame() {
+    setStarted(false);
+    setLevelIndex(0);
+    setQuestionIndex(0);
+    setSelected(null);
+    setShowFeedback(false);
+    setScore(0);
+    setHearts(3);
+    setFinished(false);
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-4 md:p-8 text-white">
+      <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="overflow-hidden rounded-[28px] border-white/10 bg-white/5 shadow-2xl backdrop-blur">
+            <CardHeader className="space-y-4 border-b border-white/10 bg-white/5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-3xl font-bold tracking-tight text-white">Guardianes de la Topografía</CardTitle>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                    Juego didáctico para reforzar aspectos generales de topografía: unidades, geometría, trigonometría y resolución de problemas sencillos.
+                  </p>
                 </div>
-            </div>
+                <Badge className="rounded-full bg-amber-400 px-4 py-2 text-slate-900 hover:bg-amber-300">Nivel 2 · Ingeniería Civil</Badge>
+              </div>
+              <VisualScene level={started ? levelIndex + 1 : 0} />
+            </CardHeader>
 
-            <form id="geoForm">
-                <div class="form-group">
-                    <label>Nombre del Técnico/Investigador:</label>
-                    <input type="text" id="nombreTecnico" required placeholder="Ingrese su nombre completo">
+            <CardContent className="p-6 md:p-8">
+              {!started ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold">Misión del juego</h2>
+                    <p className="text-slate-300">
+                      El Reino del Levantamiento está en desorden. Para restaurar la precisión de los caminos, debes superar retos sobre unidades, triángulos y decisiones topográficas básicas.
+                    </p>
+                    <div className="grid gap-3">
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="mb-1 flex items-center gap-2 font-semibold"><Compass className="h-4 w-4" /> Competencias</div>
+                        <div className="text-sm text-slate-300">Lógica matemática, pensamiento espacial, visualización y uso correcto de conceptos básicos.</div>
+                      </div>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className="mb-1 flex items-center gap-2 font-semibold"><Lightbulb className="h-4 w-4" /> Objetivo</div>
+                        <div className="text-sm text-slate-300">Resolver con seguridad ejercicios introductorios que suelen causar dificultad en clase.</div>
+                      </div>
+                    </div>
+                    <Button onClick={() => setStarted(true)} className="rounded-2xl bg-emerald-500 px-6 py-6 text-base font-bold text-white hover:bg-emerald-400">
+                      Iniciar aventura
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3 rounded-[24px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-5">
+                    <div className="text-lg font-bold">Cómo se juega</div>
+                    <ul className="space-y-3 text-sm text-slate-300">
+                      <li>• Supera 3 niveles con preguntas visuales y conceptuales.</li>
+                      <li>• Ganas puntos por respuestas correctas.</li>
+                      <li>• Si fallas, pierdes una vida y recibes retroalimentación.</li>
+                      <li>• El objetivo es llegar al final con la mayor puntuación posible.</li>
+                    </ul>
+                    <div className="rounded-2xl bg-slate-950/40 p-4 text-sm text-slate-200">
+                      Ideal para iniciar la asignatura de <span className="font-bold text-amber-300">Topografía</span> de manera visual, participativa y motivadora.
+                    </div>
+                  </div>
                 </div>
-                
-                <div class="form-group">
-                    <label>Tipo de Suelo (SUCS):</label>
-                    <select id="tipoSuelo" required>
-                        <option value="">Seleccione...</option>
-                        <option value="GW">GW - Grava bien graduada</option>
-                        <option value="GP">GP - Grava mal graduada</option>
-                        <option value="GM">GM - Grava limosa</option>
-                        <option value="GC">GC - Grava arcillosa</option>
-                        <option value="SW">SW - Arena bien graduada</option>
-                        <option value="SP">SP - Arena mal graduada</option>
-                        <option value="SM">SM - Arena limosa</option>
-                        <option value="SC">SC - Arena arcillosa</option>
-                        <option value="ML">ML - Limo baja plasticidad</option>
-                        <option value="CL">CL - Arcilla baja plasticidad</option>
-                        <option value="MH">MH - Limo alta plasticidad</option>
-                        <option value="CH">CH - Arcilla alta plasticidad</option>
-                        <option value="OL">OL - Limo orgánico</option>
-                        <option value="OH">OH - Arcilla orgánica</option>
-                        <option value="PT">PT - Turba</option>
-                    </select>
-                </div>
+              ) : finished ? (
+                <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="space-y-6 text-center">
+                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-amber-400 text-slate-900 shadow-xl">
+                    <Trophy className="h-12 w-12" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold">Misión completada</h2>
+                    <p className="mt-2 text-slate-300">{message}</p>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="rounded-3xl border-white/10 bg-white/5">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-sm text-slate-400">Puntaje</div>
+                        <div className="text-4xl font-bold text-emerald-300">{score}/{totalQuestions}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-3xl border-white/10 bg-white/5">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-sm text-slate-400">Vidas restantes</div>
+                        <div className="text-4xl font-bold text-rose-300">{hearts}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="rounded-3xl border-white/10 bg-white/5">
+                      <CardContent className="p-6 text-center">
+                        <div className="text-sm text-slate-400">Resultado</div>
+                        <div className="text-lg font-bold text-amber-300">Guardían en formación</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/5 p-5 text-left">
+                    <div className="mb-3 text-lg font-bold">Sugerencia docente</div>
+                    <p className="text-slate-300">
+                      Usa este juego como apertura de clase y luego pide a los estudiantes que expliquen en grupo por qué cada respuesta es correcta. Así se fortalece la cooperación y se corrigen vacíos en trigonometría y geometría básica.
+                    </p>
+                  </div>
+                  <Button onClick={resetGame} className="rounded-2xl bg-sky-500 px-6 py-6 text-base font-bold hover:bg-sky-400">
+                    <RotateCcw className="mr-2 h-5 w-5" /> Jugar otra vez
+                  </Button>
+                </motion.div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <div className="text-sm uppercase tracking-[0.2em] text-slate-400">{currentLevel.title}</div>
+                      <div className="mt-1 text-slate-300">{currentLevel.intro}</div>
+                    </div>
+                    <div className="flex gap-2">
+                      {Array.from({ length: hearts }).map((_, i) => (
+                        <div key={i} className="h-4 w-4 rounded-full bg-rose-400 shadow" />
+                      ))}
+                    </div>
+                  </div>
 
-                <div class="form-group">
-                    <label>Profundidad de Muestra (m):</label>
-                    <input type="number" id="profundidad" step="0.1" min="0" max="50" required placeholder="Ej: 1.5">
-                </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm text-slate-300">
+                      <span>Progreso general</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <Progress value={progress} className="h-3 bg-white/10" />
+                  </div>
 
-                <div class="form-group">
-                    <label>Radio de Influencia del Suelo (m):</label>
-                    <select id="radioBuffer" required>
-                        <option value="">Seleccione radio...</option>
-                        <option value="50">50m - Zona muy localizada</option>
-                        <option value="100">100m - Zona pequeña</option>
-                        <option value="200">200m - Zona media</option>
-                        <option value="500">500m - Zona amplia</option>
-                        <option value="1000">1000m - Zona extensa</option>
-                    </select>
-                </div>
+                  <div className="rounded-[24px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-5">
+                    <div className="mb-2 flex items-center gap-2 text-amber-300">
+                      <Map className="h-4 w-4" />
+                      <span className="font-semibold">Concepto clave</span>
+                    </div>
+                    <p className="text-sm text-slate-300">{currentLevel.concept}</p>
+                  </div>
 
-                <div class="form-group">
-                    <label>Índice de Plasticidad (%):</label>
-                    <input type="number" id="plasticidad" step="0.1" min="0" max="100" placeholder="Opcional">
-                </div>
+                  <div className="rounded-[24px] border border-white/10 bg-slate-950/40 p-5">
+                    <div className="mb-4 text-lg font-bold">Pregunta {questionIndex + 1} de {currentLevel.questions.length}</div>
+                    <div className="text-xl font-semibold leading-relaxed text-white">{currentQuestion.prompt}</div>
 
-                <div class="form-group">
-                    <label>Nivel Freático (m):</label>
-                    <input type="number" id="freatico" step="0.1" min="0" placeholder="Opcional">
-                </div>
+                    <div className="mt-5 grid gap-3">
+                      {currentQuestion.options.map((option, index) => {
+                        const isCorrect = index === currentQuestion.answer;
+                        const isSelected = selected === index;
+                        const stateClass = !showFeedback
+                          ? 'border-white/10 bg-white/5 hover:bg-white/10'
+                          : isCorrect
+                            ? 'border-emerald-400 bg-emerald-500/20'
+                            : isSelected
+                              ? 'border-rose-400 bg-rose-500/20'
+                              : 'border-white/10 bg-white/5 opacity-70';
 
-                <div class="form-group">
-                    <label>Provincia:</label>
-                    <select id="provincia" required>
-                        <option value="">Seleccione...</option>
-                        <option value="Azuay">Azuay</option>
-                        <option value="Bolívar">Bolívar</option>
-                        <option value="Cañar">Cañar</option>
-                        <option value="Carchi">Carchi</option>
-                        <option value="Chimborazo">Chimborazo</option>
-                        <option value="Cotopaxi">Cotopaxi</option>
-                        <option value="El Oro">El Oro</option>
-                        <option value="Esmeraldas">Esmeraldas</option>
-                        <option value="Galápagos">Galápagos</option>
-                        <option value="Guayas">Guayas</option>
-                        <option value="Imbabura">Imbabura</option>
-                        <option value="Loja">Loja</option>
-                        <option value="Los Ríos">Los Ríos</option>
-                        <option value="Manabí">Manabí</option>
-                        <option value="Morona Santiago">Morona Santiago</option>
-                        <option value="Napo">Napo</option>
-                        <option value="Orellana">Orellana</option>
-                        <option value="Pastaza">Pastaza</option>
-                        <option value="Pichincha">Pichincha</option>
-                        <option value="Santa Elena">Santa Elena</option>
-                        <option value="Santo Domingo">Santo Domingo</option>
-                        <option value="Sucumbíos">Sucumbíos</option>
-                        <option value="Tungurahua">Tungurahua</option>
-                        <option value="Zamora Chinchipe">Zamora Chinchipe</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Cantón:</label>
-                    <select id="canton" required>
-                        <option value="">Seleccione primero la provincia...</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Dirección:</label>
-                    <input type="text" id="direccion" placeholder="Ingrese la dirección del punto">
-                </div>
-
-                <div class="form-group">
-                    <label>Observaciones:</label>
-                    <textarea id="observaciones" rows="3" placeholder="Información adicional (opcional)"></textarea>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
-                    <button type="submit" class="btn" style="flex: 1;">💾 Guardar Datos</button>
-                    <button type="button" class="btn" id="cancelBtn" style="flex: 1; background: #95a5a6;">❌ Cancelar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    
-    <script>
-        // Configuración
-        const SUPABASE_URL = 'https://xgywnwvvrtfoltkcxfgc.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhneXdud3Z2cnRmb2x0a2N4ZmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2OTUzMTIsImV4cCI6MjA2ODI3MTMxMn0.RNrfIZsgGwZJ8cnKmF26u0kKtoA7n3HAMjda1Wd-EmY';
-
-        // Variables globales
-        let map, supabase;
-        let isAddingData = false;
-        let currentMarker = null;
-        let currentBuffer = null;
-        let selectedCoords = null;
-        let dataMarkers = [];
-        let layers = {};
-        let realTimeInterval = null;
-        let lastUpdateTime = null;
-
-        // Datos para selectores
-        const cantonesPorProvincia = {
-            'Azuay': ['Cuenca', 'Girón', 'Gualaceo', 'Nabón', 'Paute', 'Pucará', 'San Fernando', 'Santa Isabel', 'Sigsig', 'Oña', 'Chordeleg', 'El Pan', 'Sevilla de Oro', 'Guachapala', 'Camilo Ponce Enríquez'],
-            'Bolívar': ['Guaranda', 'Chillanes', 'Chimbo', 'Echeandía', 'Las Naves', 'Caluma', 'San Miguel'],
-            'Cañar': ['Azogues', 'Biblián', 'Cañar', 'La Troncal', 'El Tambo', 'Déleg', 'Suscal'],
-            'Carchi': ['Tulcán', 'Bolívar', 'Espejo', 'Mira', 'Montúfar', 'San Pedro de Huaca'],
-            'Chimborazo': ['Riobamba', 'Alausí', 'Colta', 'Chambo', 'Chunchi', 'Guamote', 'Guano', 'Pallatanga', 'Penipe', 'Cumandá'],
-            'Cotopaxi': ['Latacunga', 'La Maná', 'Pangua', 'Pujilí', 'Salcedo', 'Saquisilí', 'Sigchos'],
-            'El Oro': ['Machala', 'Arenillas', 'Atahualpa', 'Balsas', 'Chilla', 'El Guabo', 'Huaquillas', 'Las Lajas', 'Marcabelí', 'Pasaje', 'Piñas', 'Portovelo', 'Santa Rosa', 'Zaruma'],
-            'Esmeraldas': ['Esmeraldas', 'Eloy Alfaro', 'Muisne', 'Quinindé', 'San Lorenzo', 'Atacames', 'Rioverde', 'La Concordia'],
-            'Galápagos': ['San Cristóbal', 'Isabela', 'Santa Cruz'],
-            'Guayas': ['Guayaquil', 'Alfredo Baquerizo Moreno', 'Balao', 'Balzar', 'Colimes', 'Daule', 'Durán', 'El Empalme', 'El Triunfo', 'Milagro', 'Naranjal', 'Naranjito', 'Palestina', 'Pedro Carbo', 'Samborondón', 'Santa Lucía', 'Salitre', 'San Jacinto de Yaguachi', 'Playas', 'Simón Bolívar', 'Coronel Marcelino Maridueña', 'Lomas de Sargentillo', 'Nobol', 'General Antonio Elizalde', 'Isidro Ayora'],
-            'Imbabura': ['Ibarra', 'Antonio Ante', 'Cotacachi', 'Otavalo', 'Pimampiro', 'San Miguel de Urcuquí'],
-            'Loja': ['Loja', 'Calvas', 'Catamayo', 'Celica', 'Chaguarpamba', 'Espíndola', 'Gonzanamá', 'Macará', 'Paltas', 'Pindal', 'Puyango', 'Saraguro', 'Sozoranga', 'Zapotillo', 'Paquisha', 'Olmedo'],
-            'Los Ríos': ['Babahoyo', 'Baba', 'Montalvo', 'Puebloviejo', 'Quevedo', 'Urdaneta', 'Ventanas', 'Vínces', 'Palenque', 'Buena Fé', 'Valencia', 'Mocache', 'Quinsaloma'],
-            'Manabí': ['Portoviejo', 'Bolívar', 'Chone', 'El Carmen', 'Flavio Alfaro', 'Jipijapa', 'Junín', 'Manta', 'Montecristi', 'Paján', 'Pichincha', 'Rocafuerte', 'Santa Ana', 'Sucre', 'Tosagua', 'Veinticuatro de Mayo', 'Pedernales', 'Olmedo', 'Puerto López', 'Jama', 'Jaramijó', 'San Vicente'],
-            'Morona Santiago': ['Morona', 'Gualaquiza', 'Limón Indanza', 'Palora', 'Santiago', 'Sucúa', 'Huamboya', 'San Juan Bosco', 'Taisha', 'Logroño', 'Pablo Sexto', 'Tiwintza'],
-            'Napo': ['Tena', 'Archidona', 'El Chaco', 'Quijos', 'Carlos Julio Arosemena Tola'],
-            'Orellana': ['Francisco de Orellana', 'Aguarico', 'La Joya de los Sachas', 'Loreto'],
-            'Pastaza': ['Puyo', 'Arajuno', 'Mera', 'Santa Clara'],
-            'Pichincha': ['Quito', 'Cayambe', 'Mejía', 'Pedro Moncayo', 'Rumiñahui', 'San Miguel de los Bancos', 'Pedro Vicente Maldonado', 'Puerto Quito'],
-            'Santa Elena': ['Santa Elena', 'La Libertad', 'Salinas'],
-            'Santo Domingo': ['Santo Domingo'],
-            'Sucumbíos': ['Lago Agrio', 'Gonzalo Pizarro', 'Putumayo', 'Shushufindi', 'Sucumbíos', 'Cascales', 'Cuyabeno'],
-            'Tungurahua': ['Ambato', 'Baños de Agua Santa', 'Cevallos', 'Mocha', 'Patate', 'Pelileo', 'Píllaro', 'Quero', 'Tisaleo'],
-            'Zamora Chinchipe': ['Zamora', 'Chinchipe', 'Nangaritza', 'Yacuambi', 'Yantzaza', 'El Pangui', 'Centinela del Cóndor', 'Palanda', 'Paquisha']
-        };
-
-        // Función UTM
-        function toUTM(lat, lng) {
-            const x = Math.round((lng + 81) * 111320 * Math.cos(lat * Math.PI / 180) + 500000);
-            const y = Math.round(Math.abs(lat * 110540) + 10000000);
-            return { x, y };
-        }
-
-        function updateStatus(message, type) {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = `status ${type}`;
-        }
-
-        // Inicialización
-        window.onload = function() {
-            updateStatus('Iniciando mapa...', 'warning');
-            
-            try {
-                // Inicializar Supabase
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                
-                // Crear mapa
-                map = L.map('map').setView([-2.9001, -79.0059], 10);
-                
-                // Agregar capa base
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
-                    maxZoom: 19
-                }).addTo(map);
-                
-                updateStatus('Mapa cargado correctamente', 'success');
-                
-                // Cargar capas automáticamente
-                setTimeout(() => {
-                    loadLayer('cantones');
-                    loadLayer('parroquias');
-                    startRealTimeUpdates();
-                }, 1000);
-                
-                // Eventos
-                setupEvents();
-                
-            } catch (error) {
-                console.error('Error inicializando:', error);
-                updateStatus('Error: ' + error.message, 'error');
-            }
-        };
-
-        function setupEvents() {
-            // Botones principales
-            document.getElementById('btnAddData').onclick = toggleAddData;
-            document.getElementById('btnShowData').onclick = showData;
-            document.getElementById('btnClear').onclick = clearMarkers;
-            
-            // Modal
-            document.querySelector('.close').onclick = closeModal;
-            document.getElementById('cancelBtn').onclick = closeModal;
-            document.getElementById('geoForm').onsubmit = saveData;
-            document.getElementById('radioBuffer').onchange = createBuffer;
-            
-            // Selectores de ubicación
-            document.getElementById('provincia').onchange = function() {
-                const canton = document.getElementById('canton');
-                
-                canton.innerHTML = '<option value="">Seleccione cantón...</option>';
-                
-                if (cantonesPorProvincia[this.value]) {
-                    cantonesPorProvincia[this.value].forEach(c => {
-                        canton.innerHTML += `<option value="${c}">${c}</option>`;
-                    });
-                }
-            };
-            
-            document.getElementById('canton').onchange = function() {
-                // Ya no necesita llenar parroquias
-            };
-            
-            // Capas
-            document.querySelectorAll('input[id^="layer-"]').forEach(cb => {
-                cb.onchange = function() {
-                    const layerName = this.id.replace('layer-', '');
-                    if (layerName === 'realtime') {
-                        if (this.checked) {
-                            startRealTimeUpdates();
-                        } else {
-                            stopRealTimeUpdates();
-                        }
-                        return;
-                    }
-                    
-                    if (this.checked) {
-                        loadLayer(layerName);
-                    } else {
-                        removeLayer(layerName);
-                    }
-                };
-            });
-            
-            // Clic en mapa
-            map.on('click', onMapClick);
-            
-            // Cerrar modal con clic fuera
-            window.onclick = function(event) {
-                if (event.target === document.getElementById('dataModal')) {
-                    closeModal();
-                }
-            };
-        }
-
-        async function loadLayer(layerName) {
-            if (layers[layerName]) return;
-            
-            const tableNames = {
-                'cantones': 'CANTONESDELAZUAY',
-                'parroquias': 'parroquiasazuay',
-                'edificios': 'edificios',
-                'vias': 'vias cuenca',
-                'usos': 'usos de suelo'
-            };
-            
-            const tableName = tableNames[layerName];
-            if (!tableName) return;
-            
-            try {
-                updateStatus(`Cargando ${layerName}...`, 'warning');
-                
-                const { data, error } = await supabase.from(tableName).select('*');
-                
-                if (error) {
-                    console.error(`Error cargando ${tableName}:`, error);
-                    updateStatus(`Error en ${layerName}`, 'error');
-                    return;
-                }
-                
-                if (data && data.length > 0) {
-                    const layerGroup = L.layerGroup();
-                    let count = 0;
-                    
-                    data.forEach(item => {
-                        // Buscar campo de geometría
-                        let geomField = null;
-                        for (const key in item) {
-                            if (key.toLowerCase().includes('geom')) {
-                                geomField = key;
-                                break;
-                            }
-                        }
-                        
-                        if (geomField && item[geomField]) {
-                            try {
-                                const geom = typeof item[geomField] === 'string' 
-                                    ? JSON.parse(item[geomField]) 
-                                    : item[geomField];
-                                
-                                const layer = L.geoJSON(geom, {
-                                    style: getLayerStyle(layerName),
-                                    onEachFeature: function(feature, layer) {
-                                        let popupContent = `<h4 style="margin: 0 0 10px 0; color: #2c3e50;">${tableName}</h4>`;
-                                        Object.keys(item).forEach(key => {
-                                            if (!key.toLowerCase().includes('geom') && item[key]) {
-                                                popupContent += `<p style="margin: 3px 0;"><strong>${key}:</strong> ${item[key]}</p>`;
-                                            }
-                                        });
-                                        layer.bindPopup(popupContent);
-                                    }
-                                });
-                                
-                                layerGroup.addLayer(layer);
-                                count++;
-                            } catch (e) {
-                                console.warn('Error parseando geometría:', e);
-                            }
-                        }
-                    });
-                    
-                    if (count > 0) {
-                        layers[layerName] = layerGroup;
-                        layerGroup.addTo(map);
-                        updateStatus(`${layerName} cargado (${count} elementos)`, 'success');
-                    } else {
-                        updateStatus(`${layerName}: sin geometrías válidas`, 'warning');
-                    }
-                } else {
-                    updateStatus(`${layerName}: tabla vacía`, 'warning');
-                }
-                
-            } catch (error) {
-                console.error(`Error cargando ${layerName}:`, error);
-                updateStatus(`Error en ${layerName}`, 'error');
-            }
-        }
-
-        function removeLayer(layerName) {
-            if (layers[layerName]) {
-                map.removeLayer(layers[layerName]);
-                delete layers[layerName];
-            }
-        }
-
-        function getLayerStyle(layerName) {
-            const styles = {
-                'cantones': { color: '#e74c3c', weight: 2, fillOpacity: 0.1 },
-                'parroquias': { color: '#3498db', weight: 1, fillOpacity: 0.1 },
-                'edificios': { color: '#f39c12', weight: 1, fillOpacity: 0.3 },
-                'vias': { color: '#9b59b6', weight: 3, fillOpacity: 0 },
-                'usos': { color: '#1abc9c', weight: 1, fillOpacity: 0.2 }
-            };
-            return styles[layerName] || { color: '#34495e', weight: 1, fillOpacity: 0.1 };
-        }
-
-        function toggleAddData() {
-            isAddingData = !isAddingData;
-            const btn = document.getElementById('btnAddData');
-            
-            if (isAddingData) {
-                btn.textContent = '❌ Cancelar Ingreso';
-                btn.classList.add('active');
-                map.getContainer().style.cursor = 'crosshair';
-                updateStatus('Haz clic en el mapa para agregar punto', 'warning');
-            } else {
-                btn.textContent = '📍 Ingresar Datos';
-                btn.classList.remove('active');
-                map.getContainer().style.cursor = '';
-                updateStatus('Modo ingreso desactivado', 'success');
-                if (currentMarker) map.removeLayer(currentMarker);
-                if (currentBuffer) map.removeLayer(currentBuffer);
-            }
-        }
-
-        function onMapClick(e) {
-            if (!isAddingData) return;
-            
-            selectedCoords = e.latlng;
-            
-            if (currentMarker) map.removeLayer(currentMarker);
-            if (currentBuffer) map.removeLayer(currentBuffer);
-            
-            currentMarker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(map);
-            
-            const utm = toUTM(e.latlng.lat, e.latlng.lng);
-            
-            document.getElementById('coordLat').textContent = e.latlng.lat.toFixed(6);
-            document.getElementById('coordLng').textContent = e.latlng.lng.toFixed(6);
-            document.getElementById('coordUtmX').textContent = utm.x;
-            document.getElementById('coordUtmY').textContent = utm.y;
-            
-            document.getElementById('dataModal').style.display = 'block';
-        }
-
-        function createBuffer() {
-            const radius = document.getElementById('radioBuffer').value;
-            if (!radius || !selectedCoords) return;
-            
-            if (currentBuffer) map.removeLayer(currentBuffer);
-            
-            currentBuffer = L.circle([selectedCoords.lat, selectedCoords.lng], {
-                radius: parseInt(radius),
-                color: '#3498db',
-                fillColor: '#3498db',
-                fillOpacity: 0.2,
-                weight: 2,
-                dashArray: '5, 5'
-            }).addTo(map);
-            
-            currentBuffer.bindPopup(`
-                <div style="text-align: center;">
-                    <h4>🎯 Área de Influencia</h4>
-                    <p><strong>Radio:</strong> ${radius} metros</p>
-                    <p><strong>Área:</strong> ${(Math.PI * Math.pow(radius, 2) / 10000).toFixed(2)} hectáreas</p>
-                </div>
-            `);
-        }
-
-        async function saveData(e) {
-            e.preventDefault();
-            
-            if (!selectedCoords) {
-                alert('No hay coordenadas seleccionadas');
-                return;
-            }
-            
-            try {
-                updateStatus('Guardando datos...', 'warning');
-                
-                const utm = toUTM(selectedCoords.lat, selectedCoords.lng);
-                
-                const data = {
-                    nombre_tecnico: document.getElementById('nombreTecnico').value,
-                    latitud: selectedCoords.lat,
-                    longitud: selectedCoords.lng,
-                    utm_x: utm.x,
-                    utm_y: utm.y,
-                    tipo_suelo_sucs: document.getElementById('tipoSuelo').value,
-                    profundidad_muestra: parseFloat(document.getElementById('profundidad').value),
-                    radio_influencia: parseInt(document.getElementById('radioBuffer').value),
-                    indice_plasticidad: parseFloat(document.getElementById('plasticidad').value) || null,
-                    nivel_freatico: parseFloat(document.getElementById('freatico').value) || null,
-                    provincia: document.getElementById('provincia').value,
-                    canton: document.getElementById('canton').value,
-                    direccion: document.getElementById('direccion').value,
-                    observaciones: document.getElementById('observaciones').value || null,
-                    fecha_registro: new Date().toISOString()
-                };
-                
-                const { error } = await supabase.from('datos_geotecnicos').insert([data]);
-                
-                if (error) {
-                    if (error.code === '42P01') {
-                        alert('CREAR TABLA EN PGADMIN:\n\nCREATE TABLE datos_geotecnicos (\n  id SERIAL PRIMARY KEY,\n  nombre_tecnico VARCHAR(100),\n  latitud DOUBLE PRECISION,\n  longitud DOUBLE PRECISION,\n  utm_x INTEGER,\n  utm_y INTEGER,\n  tipo_suelo_sucs VARCHAR(10),\n  profundidad_muestra DECIMAL(5,2),\n  radio_influencia INTEGER,\n  indice_plasticidad DECIMAL(5,2),\n  nivel_freatico DECIMAL(10,2),\n  provincia VARCHAR(50),\n  canton VARCHAR(50),\n  direccion TEXT,\n  observaciones TEXT,\n  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);');
-                        updateStatus('Tabla no existe - Ver instrucciones', 'error');
-                        return;
-                    }
-                    throw error;
-                }
-                
-                updateStatus('Datos guardados exitosamente', 'success');
-                alert('✅ Datos guardados correctamente');
-                closeModal();
-                
-                // Actualizar inmediatamente la capa en tiempo real
-                if (document.getElementById('layer-realtime').checked) {
-                    setTimeout(() => {
-                        loadRealTimeData();
-                    }, 500);
-                }
-                
-            } catch (error) {
-                console.error('Error guardando:', error);
-                updateStatus('Error: ' + error.message, 'error');
-                alert('❌ Error: ' + error.message);
-            }
-        }
-
-        async function showData() {
-            try {
-                updateStatus('Cargando datos existentes...', 'warning');
-                
-                const { data, error } = await supabase
-                    .from('datos_geotecnicos')
-                    .select('*')
-                    .order('fecha_registro', { ascending: false });
-                
-                if (error) {
-                    if (error.code === '42P01') {
-                        alert('No hay tabla de datos aún. Crea la tabla primero.');
-                        updateStatus('Tabla no existe', 'warning');
-                        return;
-                    }
-                    throw error;
-                }
-                
-                clearMarkers();
-                
-                if (data && data.length > 0) {
-                    data.forEach((punto, i) => {
-                        // Marcador principal
-                        const marker = L.marker([punto.latitud, punto.longitud])
-                            .bindPopup(`
-                                <div style="max-width: 300px;">
-                                    <h4 style="margin: 0 0 10px 0; color: #2c3e50;">📊 Punto Geotécnico ${i + 1}</h4>
-                                    <p><strong>👤 Técnico:</strong> ${punto.nombre_tecnico}</p>
-                                    <p><strong>🏗️ Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
-                                    <p><strong>📏 Profundidad:</strong> ${punto.profundidad_muestra}m</p>
-                                    <p><strong>🎯 Radio:</strong> ${punto.radio_influencia}m</p>
-                                    <p><strong>📈 Plasticidad:</strong> ${punto.indice_plasticidad || 'N/A'}%</p>
-                                    <p><strong>💧 Freático:</strong> ${punto.nivel_freatico || 'N/A'}m</p>
-                                    <p><strong>📍 Ubicación:</strong> ${punto.direccion || 'Sin dirección'}, ${punto.canton}</p>
-                                    <p><strong>📅 Fecha:</strong> ${new Date(punto.fecha_registro).toLocaleDateString()}</p>
-                                    ${punto.observaciones ? `<p><strong>📝 Obs:</strong> ${punto.observaciones}</p>` : ''}
-                                </div>
-                            `)
-                            .addTo(map);
-                        
-                        dataMarkers.push(marker);
-                        
-                        // Buffer del área de influencia
-                        if (punto.radio_influencia) {
-                            const buffer = L.circle([punto.latitud, punto.longitud], {
-                                radius: punto.radio_influencia,
-                                color: '#27ae60',
-                                fillColor: '#27ae60',
-                                fillOpacity: 0.15,
-                                weight: 2,
-                                dashArray: '3, 3'
-                            }).addTo(map);
-                            
-                            buffer.bindPopup(`
-                                <div style="text-align: center;">
-                                    <h4>🎯 Área de Influencia</h4>
-                                    <p><strong>Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
-                                    <p><strong>Radio:</strong> ${punto.radio_influencia}m</p>
-                                    <p><strong>Técnico:</strong> ${punto.nombre_tecnico}</p>
-                                </div>
-                            `);
-                            
-                            dataMarkers.push(buffer);
-                        }
-                    });
-                    
-                    updateStatus(`${data.length} puntos cargados con éxito`, 'success');
-                    alert(`✅ Se cargaron ${data.length} puntos geotécnicos en el mapa`);
-                    
-                    // Ajustar vista del mapa
-                    if (data.length > 0) {
-                        const group = new L.featureGroup(dataMarkers.filter(m => m instanceof L.Marker));
-                        map.fitBounds(group.getBounds().pad(0.1));
-                    }
-                    
-                } else {
-                    updateStatus('No hay datos para mostrar', 'warning');
-                    alert('ℹ️ No hay datos geotécnicos guardados');
-                }
-                
-            } catch (error) {
-                console.error('Error cargando datos:', error);
-                updateStatus('Error cargando datos', 'error');
-                alert('❌ Error cargando datos: ' + error.message);
-            }
-        }
-
-        function clearMarkers() {
-            dataMarkers.forEach(marker => map.removeLayer(marker));
-            dataMarkers = [];
-            updateStatus('Marcadores eliminados', 'success');
-        }
-
-        function closeModal() {
-            document.getElementById('dataModal').style.display = 'none';
-            document.getElementById('geoForm').reset();
-            
-            if (currentMarker) {
-                map.removeLayer(currentMarker);
-                currentMarker = null;
-            }
-            
-            if (currentBuffer) {
-                map.removeLayer(currentBuffer);
-                currentBuffer = null;
-            }
-            
-            if (isAddingData) toggleAddData();
-            selectedCoords = null;
-        }
-
-        // Funciones para tiempo real
-        function startRealTimeUpdates() {
-            if (realTimeInterval) return; // Ya está activo
-            
-            updateStatus('Tiempo real activado', 'success');
-            lastUpdateTime = new Date().toISOString();
-            
-            // Cargar datos inmediatamente
-            loadRealTimeData();
-            
-            // Actualizar cada 10 segundos
-            realTimeInterval = setInterval(() => {
-                loadRealTimeData();
-            }, 10000);
-        }
-
-        function stopRealTimeUpdates() {
-            if (realTimeInterval) {
-                clearInterval(realTimeInterval);
-                realTimeInterval = null;
-                updateStatus('Tiempo real desactivado', 'warning');
-                
-                // Limpiar marcadores de tiempo real
-                clearRealTimeMarkers();
-            }
-        }
-
-        async function loadRealTimeData() {
-            try {
-                const { data, error } = await supabase
-                    .from('datos_geotecnicos')
-                    .select('*')
-                    .gte('fecha_registro', lastUpdateTime || new Date(Date.now() - 24*60*60*1000).toISOString())
-                    .order('fecha_registro', { ascending: false });
-
-                if (error) {
-                    console.error('Error cargando datos en tiempo real:', error);
-                    return;
-                }
-
-                if (data && data.length > 0) {
-                    // Limpiar marcadores anteriores de tiempo real
-                    clearRealTimeMarkers();
-                    
-                    data.forEach((punto, i) => {
-                        // Crear marcador con animación
-                        const marker = L.marker([punto.latitud, punto.longitud], {
-                            icon: L.divIcon({
-                                html: `<div style="
-                                    background: linear-gradient(45deg, #e74c3c, #c0392b);
-                                    width: 20px;
-                                    height: 20px;
-                                    border-radius: 50%;
-                                    border: 3px solid white;
-                                    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6);
-                                    animation: pulse 2s infinite;
-                                    display: flex;
-                                    align-items: center;
-                                    justify-content: center;
-                                    color: white;
-                                    font-size: 10px;
-                                    font-weight: bold;
-                                ">📍</div>
-                                <style>
-                                    @keyframes pulse {
-                                        0% { transform: scale(1); box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6); }
-                                        50% { transform: scale(1.2); box-shadow: 0 4px 15px rgba(231, 76, 60, 0.8); }
-                                        100% { transform: scale(1); box-shadow: 0 2px 8px rgba(231, 76, 60, 0.6); }
-                                    }
-                                </style>`,
-                                iconSize: [20, 20],
-                                iconAnchor: [10, 10]
-                            })
-                        });
-
-                        // Popup mejorado para tiempo real
-                        const timeAgo = getTimeAgo(punto.fecha_registro);
-                        const popupContent = `
-                            <div style="max-width: 320px; font-family: Arial, sans-serif;">
-                                <div style="background: linear-gradient(45deg, #e74c3c, #c0392b); color: white; padding: 10px; margin: -15px -20px 15px -20px; border-radius: 5px 5px 0 0; text-align: center;">
-                                    <h4 style="margin: 0; font-size: 14px;">🔴 DATOS EN VIVO</h4>
-                                    <small style="opacity: 0.9;">Agregado ${timeAgo}</small>
-                                </div>
-                                
-                                <div style="margin-bottom: 12px;">
-                                    <p style="margin: 5px 0;"><strong>👤 Técnico:</strong> ${punto.nombre_tecnico}</p>
-                                    <p style="margin: 5px 0;"><strong>🏗️ Suelo:</strong> 
-                                        <span style="background: #3498db; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">
-                                            ${punto.tipo_suelo_sucs}
-                                        </span>
-                                    </p>
-                                    <p style="margin: 5px 0;"><strong>📏 Profundidad:</strong> ${punto.profundidad_muestra}m</p>
-                                    <p style="margin: 5px 0;"><strong>🎯 Radio:</strong> ${punto.radio_influencia}m</p>
-                                </div>
-                                
-                                <div style="background: #f8f9fa; padding: 8px; border-radius: 3px; margin-bottom: 10px;">
-                                    <p style="margin: 3px 0; font-size: 12px;"><strong>📈 Plasticidad:</strong> ${punto.indice_plasticidad || 'N/A'}%</p>
-                                    <p style="margin: 3px 0; font-size: 12px;"><strong>💧 Freático:</strong> ${punto.nivel_freatico || 'N/A'}m</p>
-                                </div>
-                                
-                                <p style="margin: 5px 0; font-size: 12px;"><strong>📍 Ubicación:</strong> ${punto.direccion || 'Sin dirección'}</p>
-                                <p style="margin: 5px 0; font-size: 12px;"><strong>🗺️ Cantón:</strong> ${punto.canton}, ${punto.provincia}</p>
-                                
-                                ${punto.observaciones ? `
-                                    <div style="border-top: 1px solid #ecf0f1; padding-top: 8px; margin-top: 8px;">
-                                        <p style="margin: 0; font-size: 11px;"><strong>📝 Observaciones:</strong></p>
-                                        <p style="margin: 3px 0; font-size: 11px; font-style: italic;">${punto.observaciones}</p>
-                                    </div>
-                                ` : ''}
+                        return (
+                          <button
+                            key={option}
+                            onClick={() => handleSelect(index)}
+                            className={`rounded-2xl border p-4 text-left transition ${stateClass}`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="font-medium text-white">{option}</span>
+                              {showFeedback && isCorrect && <CheckCircle2 className="h-5 w-5 text-emerald-300" />}
+                              {showFeedback && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-rose-300" />}
                             </div>
-                        `;
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                        marker.bindPopup(popupContent, {
-                            maxWidth: 350,
-                            className: 'realtime-popup'
-                        });
-                        
-                        marker.addTo(map);
-                        marker._isRealTimeMarker = true;
-                        dataMarkers.push(marker);
-                        
-                        // Buffer en tiempo real
-                        if (punto.radio_influencia) {
-                            const buffer = L.circle([punto.latitud, punto.longitud], {
-                                radius: punto.radio_influencia,
-                                color: '#e74c3c',
-                                fillColor: '#e74c3c',
-                                fillOpacity: 0.15,
-                                weight: 2,
-                                dashArray: '5, 10',
-                                className: 'realtime-buffer'
-                            }).addTo(map);
-                            
-                            buffer.bindPopup(`
-                                <div style="text-align: center;">
-                                    <h4 style="color: #e74c3c; margin: 0 0 8px 0;">🔴 Área en Tiempo Real</h4>
-                                    <p style="margin: 3px 0;"><strong>Suelo:</strong> ${punto.tipo_suelo_sucs}</p>
-                                    <p style="margin: 3px 0;"><strong>Radio:</strong> ${punto.radio_influencia}m</p>
-                                    <p style="margin: 3px 0;"><strong>Técnico:</strong> ${punto.nombre_tecnico}</p>
-                                    <small style="color: #7f8c8d;">Agregado ${timeAgo}</small>
-                                </div>
-                            `);
-                            
-                            buffer._isRealTimeMarker = true;
-                            dataMarkers.push(buffer);
-                        }
-                    });
-                    
-                    // Actualizar tiempo de última consulta
-                    lastUpdateTime = new Date().toISOString();
-                    
-                    if (data.length > 0) {
-                        updateStatus(`Tiempo real: ${data.length} puntos nuevos`, 'success');
-                    }
-                }
-                
-            } catch (error) {
-                console.error('Error en tiempo real:', error);
-                updateStatus('Error en tiempo real', 'error');
-            }
-        }
+                    {showFeedback && (
+                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+                        <div className={`mb-2 font-bold ${selected === currentQuestion.answer ? 'text-emerald-300' : 'text-rose-300'}`}>
+                          {selected === currentQuestion.answer ? '¡Correcto!' : 'Respuesta incorrecta'}
+                        </div>
+                        <p className="text-sm text-slate-300">{currentQuestion.explanation}</p>
+                        <Button onClick={handleNext} className="mt-4 rounded-2xl bg-amber-400 text-slate-950 hover:bg-amber-300">
+                          Continuar
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        function clearRealTimeMarkers() {
-            dataMarkers = dataMarkers.filter(marker => {
-                if (marker._isRealTimeMarker) {
-                    map.removeLayer(marker);
-                    return false;
-                }
-                return true;
-            });
-        }
+        <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="space-y-6">
+          <Card className="rounded-[28px] border-white/10 bg-white/5 shadow-2xl backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">Diseño pedagógico</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-slate-300">
+              <div className="rounded-2xl bg-white/5 p-4">
+                <div className="font-semibold text-white">Narrativa</div>
+                <div>Los estudiantes asumen el rol de guardianes que restauran la precisión del reino mediante retos matemáticos.</div>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4">
+                <div className="font-semibold text-white">Problema detectado</div>
+                <div>Vacíos en trigonometría, geometría básica, unidades y poca interacción entre estudiantes.</div>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4">
+                <div className="font-semibold text-white">Evidencia de logro</div>
+                <div>Resolver ejercicios introductorios con mayor rapidez, seguridad y argumentación.</div>
+              </div>
+            </CardContent>
+          </Card>
 
-        function getTimeAgo(dateString) {
-            const now = new Date();
-            const date = new Date(dateString);
-            const diffMs = now - date;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            if (diffMins < 1) return 'hace unos segundos';
-            if (diffMins < 60) return `hace ${diffMins} min`;
-            if (diffHours < 24) return `hace ${diffHours}h`;
-            return `hace ${diffDays} días`;
-        }
-
-        console.log('🗺️ Geoportal Azuay cargado y listo para usar');
-    </script>
-</body>
-</html>
+          <Card className="rounded-[28px] border-white/10 bg-white/5 shadow-2xl backdrop-blur">
+            <CardHeader>
+              <CardTitle className="text-white">Niveles del juego</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {levels.map((lvl, i) => {
+                const Icon = lvl.icon;
+                return (
+                  <div key={lvl.id} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <div className={`rounded-2xl bg-gradient-to-br ${lvl.color} p-3`}>
+                      <Icon className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-white">{lvl.title}</div>
+                      <div className="text-sm text-slate-300">{lvl.concept}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
