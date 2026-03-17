@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guardianes de la Topografía</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b, #0b1120);
+      color: #fff;
+      min-height: 100vh;
+    }
+    .container {
+      width: min(1200px, 94%);
+      margin: 24px auto;
+      display: grid;
+      grid-template-columns: 1.4fr 0.9fr;
+      gap: 24px;
+    }
+    .panel {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.35);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+    .header { padding: 24px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .title { margin: 0; font-size: 2rem; }
+    .subtitle { color: #cbd5e1; line-height: 1.5; }
+    .badge {
+      display: inline-block; margin-top: 12px; background: #facc15; color: #111827;
+      padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 0.9rem;
+    }
+    .content { padding: 24px; }
+    .scene {
+      position: relative; height: 280px; border-radius: 22px; overflow: hidden; margin-top: 18px;
+      background: linear-gradient(135deg, #0f172a, #0f3a63, #14532d);
+    }
+    .scene .sun {
+      position: absolute; left: 32px; bottom: 38px; width: 82px; height: 82px; border-radius: 50%;
+      background: radial-gradient(circle, #fde68a 0%, #facc15 70%, rgba(250,204,21,0.2) 100%);
+      box-shadow: 0 0 50px rgba(250,204,21,0.45);
+    }
+    .scene .ground {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 96px;
+      background: linear-gradient(to top, #166534, #22c55e);
+    }
+    .scene .path {
+      position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+      width: 280px; height: 22px; border-radius: 999px;
+      background: linear-gradient(to right, #f59e0b, #fde68a, #f59e0b);
+      box-shadow: 0 0 20px rgba(245,158,11,0.45);
+    }
+    .scene .castle {
+      position: absolute; right: 36px; bottom: 60px; width: 170px; height: 120px;
+      background: #1f2937; border-radius: 16px 16px 0 0;
+    }
+    .scene .tower1, .scene .tower2 {
+      position: absolute; width: 34px; height: 80px; background: #111827; top: -36px; border-radius: 10px 10px 0 0;
+    }
+    .scene .tower1 { left: 18px; }
+    .scene .tower2 { right: 18px; }
+    .scene .princess {
+      position: absolute; right: 95px; bottom: 140px; width: 34px; height: 34px; border-radius: 50%; background: #f9a8d4;
+      box-shadow: 0 0 15px rgba(249,168,212,0.55);
+    }
+    .scene .stars::before, .scene .stars::after {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 22%, white 0 1px, transparent 2px),
+        radial-gradient(circle at 70% 15%, white 0 1px, transparent 2px),
+        radial-gradient(circle at 45% 35%, white 0 1px, transparent 2px),
+        radial-gradient(circle at 86% 28%, white 0 1px, transparent 2px),
+        radial-gradient(circle at 58% 10%, white 0 1px, transparent 2px);
+      opacity: .5;
+    }
+    .topbar, .stats { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; align-items: center; }
+    .stats-boxes { display: flex; gap: 10px; flex-wrap: wrap; }
+    .mini {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 14px; border-radius: 16px; color: #e2e8f0; font-size: 0.95rem;
+    }
+    .hearts { display: flex; gap: 8px; }
+    .heart {
+      width: 16px; height: 16px; border-radius: 50%; background: #fb7185; box-shadow: 0 0 10px rgba(251,113,133,.45);
+    }
+    .progress-wrap { margin: 18px 0; }
+    .progress-bar {
+      height: 12px; background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; width: 0%; background: linear-gradient(to right, #38bdf8, #22c55e, #facc15); transition: width .35s ease;
+    }
+    .card {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 22px; padding: 18px;
+      margin-bottom: 18px;
+    }
+    .question { font-size: 1.2rem; font-weight: 700; line-height: 1.5; }
+    .options { display: grid; gap: 12px; margin-top: 18px; }
+    .option {
+      padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06); cursor: pointer; transition: .25s ease;
+      color: white; text-align: left; font-size: 1rem;
+    }
+    .option:hover { transform: translateY(-2px); background: rgba(255,255,255,0.11); }
+    .option.correct { background: rgba(34,197,94,0.22); border-color: #4ade80; }
+    .option.wrong { background: rgba(244,63,94,0.22); border-color: #fb7185; }
+    .feedback {
+      margin-top: 16px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.08); color: #dbeafe;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback strong.correct { color: #86efac; }
+    .feedback strong.wrong { color: #fda4af; }
+    .btn {
+      border: none; border-radius: 16px; padding: 14px 20px; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: .25s ease; margin-top: 14px;
+    }
+    .btn-primary { background: #22c55e; color: white; }
+    .btn-primary:hover { background: #16a34a; }
+    .btn-secondary { background: #facc15; color: #111827; }
+    .btn-secondary:hover { background: #eab308; }
+    .btn-blue { background: #38bdf8; color: #082f49; }
+    .btn-blue:hover { background: #0ea5e9; color: white; }
+    .side-panel { padding: 24px; }
+    .side-title { margin-top: 0; }
+    .level-item {
+      display: flex; gap: 12px; align-items: flex-start; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 14px; margin-bottom: 12px;
+    }
+    .icon {
+      width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; font-weight: bold;
+      background: linear-gradient(135deg, #0ea5e9, #22c55e);
+    }
+    .start-screen, .result-screen { display: block; }
+    .hidden { display: none; }
+    .result-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 18px 0;
+    }
+    .result-box {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 18px; text-align: center;
+    }
+    .big { font-size: 2rem; font-weight: 800; margin-top: 8px; }
+    .small { color: #cbd5e1; font-size: .95rem; }
+    .canvas-note { color: #cbd5e1; line-height: 1.6; }
+    .visual-box {
+      height: 180px; border-radius: 20px; margin-bottom: 12px; overflow: hidden; position: relative;
+      background: linear-gradient(135deg, #dbeafe, #c4b5fd);
+    }
+    .visual-units .line { position: absolute; left: 40px; right: 40px; bottom: 44px; height: 5px; background: #334155; }
+    .visual-units .stake { position: absolute; left: 52px; bottom: 44px; width: 6px; height: 80px; background: #92400e; }
+    .visual-units .mark { position: absolute; bottom: 30px; color: #334155; font-weight: bold; font-size: .9rem; }
+    .visual-units .m0 { left: 40px; } .visual-units .m5 { left: 185px; } .visual-units .m10 { left: 335px; } .visual-units .m15 { right: 28px; }
+    .visual-units .mission { position: absolute; right: 16px; top: 16px; background: rgba(255,255,255,.8); color: #0f172a; padding: 10px 12px; border-radius: 14px; font-weight: 700; }
+    .visual-triangle svg, .visual-mountain svg { width: 100%; height: 100%; }
+    .footer-note { margin-top: 16px; color: #94a3b8; font-size: 0.9rem; }
+    @media (max-width: 950px) {
+      .container { grid-template-columns: 1fr; }
+      .result-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <div class="header">
+        <h1 class="title">Guardianes de la Topografía</h1>
+        <p class="subtitle">Juego visual y didáctico para reforzar unidades, geometría, trigonometría y razonamiento espacial en Topografía.</p>
+        <span class="badge">HTML puro · listo para GitHub Pages</span>
+        <div class="scene">
+          <div class="stars"></div>
+          <div class="sun"></div>
+          <div class="ground"></div>
+          <div class="path"></div>
+          <div class="castle">
+            <div class="tower1"></div>
+            <div class="tower2"></div>
+          </div>
+          <div class="princess"></div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div id="startScreen" class="start-screen">
+          <div class="card">
+            <h2>Misión del juego</h2>
+            <p class="canvas-note">El Reino del Levantamiento ha perdido la precisión de sus caminos. Los estudiantes serán guardianes que deberán superar retos matemáticos y topográficos para restaurar el orden.</p>
+            <button class="btn btn-primary" onclick="startGame()">Iniciar aventura</button>
+          </div>
+
+          <div class="card">
+            <h3>Cómo se juega</h3>
+            <p class="canvas-note">Responde preguntas, observa los elementos visuales, gana puntos, conserva tus vidas y llega hasta el final. Este recurso sirve como apertura de clase o actividad motivacional.</p>
+          </div>
+        </div>
+
+        <div id="gameScreen" class="hidden">
+          <div class="topbar">
+            <div>
+              <div id="levelTitle" style="font-size: 1.2rem; font-weight: 800;"></div>
+              <div id="levelIntro" class="small" style="margin-top: 6px;"></div>
+            </div>
+            <div class="hearts" id="hearts"></div>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="stats">
+              <div class="small">Progreso general</div>
+              <div class="small" id="progressText">0%</div>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+
+          <div class="card">
+            <strong>Concepto clave:</strong>
+            <div id="levelConcept" class="canvas-note" style="margin-top: 8px;"></div>
+          </div>
+
+          <div id="visualBox" class="visual-box"></div>
+
+          <div class="card">
+            <div id="questionCounter" class="small"></div>
+            <div id="questionText" class="question" style="margin-top: 8px;"></div>
+            <div id="options" class="options"></div>
+            <div id="feedback" class="feedback"></div>
+          </div>
+        </div>
+
+        <div id="resultScreen" class="result-screen hidden">
+          <div class="card" style="text-align:center;">
+            <div style="font-size: 3rem;">🏆</div>
+            <h2>Misión completada</h2>
+            <p id="finalMessage" class="canvas-note"></p>
+
+            <div class="result-grid">
+              <div class="result-box">
+                <div class="small">Puntaje</div>
+                <div class="big" id="finalScore"></div>
+              </div>
+              <div class="result-box">
+                <div class="small">Vidas restantes</div>
+                <div class="big" id="finalHearts"></div>
+              </div>
+              <div class="result-box">
+                <div class="small">Resultado</div>
+                <div class="big" style="font-size:1.2rem; color:#fde68a;">Guardián en formación</div>
+              </div>
+            </div>
+
+            <button class="btn btn-blue" onclick="resetGame()">Jugar otra vez</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel side-panel">
+      <h2 class="side-title">Diseño pedagógico</h2>
+      <div class="card">
+        <strong>Narrativa</strong>
+        <p class="canvas-note">Los estudiantes asumen el rol de guardianes del conocimiento topográfico que deben restaurar la precisión de los caminos del reino.</p>
+      </div>
+      <div class="card">
+        <strong>Problema detectado</strong>
+        <p class="canvas-note">Dificultades en unidades, triángulos, pendiente, visualización espacial y poca seguridad al resolver ejercicios introductorios.</p>
+      </div>
+      <div class="card">
+        <strong>Evidencia de logro</strong>
+        <p class="canvas-note">Mayor participación, mejor argumentación y capacidad para resolver problemas básicos con sentido matemático.</p>
+      </div>
+
+      <h3>Niveles del juego</h3>
+      <div class="level-item"><div class="icon">📏</div><div><strong>Nivel 1</strong><br><span class="small">Unidades del terreno y magnitudes básicas.</span></div></div>
+      <div class="level-item"><div class="icon">📐</div><div><strong>Nivel 2</strong><br><span class="small">Triángulos, Pitágoras y pendiente.</span></div></div>
+      <div class="level-item"><div class="icon">⛰️</div><div><strong>Nivel 3</strong><br><span class="small">Decisión topográfica y aplicación de conceptos.</span></div></div>
+
+      <div class="footer-note">Sube este archivo como <strong>index.html</strong> en tu repositorio para que GitHub Pages lo muestre correctamente.</div>
+    </div>
+  </div>
+
+  <script>
+    const levels = [
+      {
+        title: 'Nivel 1: Unidades del terreno',
+        intro: 'Antes de medir el terreno, un guardián debe reconocer correctamente las unidades y conceptos básicos.',
+        concept: 'Refuerza el uso correcto de metros, centímetros, kilómetros y la interpretación básica de distancias.',
+        visual: 'units',
+        questions: [
+          {
+            prompt: '¿Qué unidad es la más adecuada para expresar el ancho de una vía urbana?',
+            options: ['Milímetros', 'Metros', 'Kilómetros', 'Grados'],
+            answer: 1,
+            explanation: 'Para dimensiones como ancho de vías, la unidad más práctica y común es el metro (m).'
+          },
+          {
+            prompt: 'Si una distancia es 2.5 km, ¿cuántos metros son?',
+            options: ['25 m', '250 m', '2 500 m', '25 000 m'],
+            answer: 2,
+            explanation: '1 km = 1000 m, por tanto 2.5 km = 2500 m.'
+          },
+          {
+            prompt: '¿Cuál de estos pares de unidades pertenece a longitud?',
+            options: ['m y cm', 'm² y ha', 'grados y radianes', 'm³ y L'],
+            answer: 0,
+            explanation: 'Metro y centímetro son unidades de longitud.'
+          }
+        ]
+      },
+      {
+        title: 'Nivel 2: Triángulos y ángulos',
+        intro: 'Los caminos del reino se deforman. Para orientarse, el guardián debe usar trigonometría y geometría básica.',
+        concept: 'Fortalece la comprensión de triángulos rectángulos, pendiente y relaciones geométricas simples.',
+        visual: 'triangle',
+        questions: [
+          {
+            prompt: 'En un triángulo rectángulo, si los catetos miden 3 m y 4 m, la hipotenusa mide:',
+            options: ['5 m', '6 m', '7 m', '12 m'],
+            answer: 0,
+            explanation: 'Por Pitágoras: 3² + 4² = 5².'
+          },
+          {
+            prompt: 'Si avanzas 10 m horizontalmente y subes 2 m, la pendiente porcentual es:',
+            options: ['2 %', '5 %', '20 %', '200 %'],
+            answer: 2,
+            explanation: 'Pendiente (%) = (desnivel / distancia horizontal) × 100 = (2/10)×100 = 20 %.'
+          },
+          {
+            prompt: '¿Qué herramienta matemática ayuda a relacionar lados y ángulos en topografía básica?',
+            options: ['Trigonometría', 'Ortografía', 'Estadística descriptiva', 'Álgebra booleana'],
+            answer: 0,
+            explanation: 'La trigonometría permite analizar distancias, ángulos y alturas.'
+          }
+        ]
+      },
+      {
+        title: 'Nivel 3: Decisión topográfica',
+        intro: 'Ahora debes aplicar lo aprendido para escoger la mejor interpretación de una situación básica en campo.',
+        concept: 'Integra visualización espacial, lógica matemática y lectura de problemas sencillos.',
+        visual: 'mountain',
+        questions: [
+          {
+            prompt: 'Para calcular una distancia inaccesible usando un triángulo, primero necesitas comprender:',
+            options: ['Relaciones geométricas y ángulos', 'Solo colores del plano', 'Velocidad del viento', 'Resistencia del hormigón'],
+            answer: 0,
+            explanation: 'La base del cálculo topográfico inicial está en la geometría y la trigonometría.'
+          },
+          {
+            prompt: 'Si un grupo obtiene respuestas diferentes en un ejercicio sencillo, la mejor acción es:',
+            options: ['Ignorar el error', 'Comparar procedimiento y verificar unidades', 'Cambiar todos los datos', 'Responder al azar'],
+            answer: 1,
+            explanation: 'Verificar procedimiento y unidades ayuda a detectar el error y mejora la cooperación.'
+          },
+          {
+            prompt: '¿Qué señal muestra que el estudiante comprendió el tema?',
+            options: ['Memoriza una fórmula sin entenderla', 'Resuelve ejercicios básicos con seguridad', 'Evita participar', 'Solo copia resultados'],
+            answer: 1,
+            explanation: 'Comprender se evidencia cuando puede resolver ejercicios con seguridad y criterio.'
+          }
+        ]
+      }
+    ];
+
+    let levelIndex = 0;
+    let questionIndex = 0;
+    let score = 0;
+    let hearts = 3;
+    let locked = false;
+
+    function totalQuestions() {
+      return levels.reduce((sum, lvl) => sum + lvl.questions.length, 0);
+    }
+
+    function answeredCount() {
+      let count = 0;
+      for (let i = 0; i < levelIndex; i++) count += levels[i].questions.length;
+      count += questionIndex;
+      return count;
+    }
+
+    function startGame() {
+      document.getElementById('startScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+      document.getElementById('gameScreen').classList.remove('hidden');
+      renderGame();
+    }
+
+    function renderHearts() {
+      const heartsBox = document.getElementById('hearts');
+      heartsBox.innerHTML = '';
+      for (let i = 0; i < hearts; i++) {
+        const div = document.createElement('div');
+        div.className = 'heart';
+        heartsBox.appendChild(div);
+      }
+    }
+
+    function renderVisual(type) {
+      const box = document.getElementById('visualBox');
+      if (type === 'units') {
+        box.className = 'visual-box visual-units';
+        box.innerHTML = `
+          <div class="line"></div>
+          <div class="stake"></div>
+          <div class="mark m0">0 m</div>
+          <div class="mark m5">5 m</div>
+          <div class="mark m10">10 m</div>
+          <div class="mark m15">15 m</div>
+          <div class="mission">Misión: identifica unidades</div>
+        `;
+      } else if (type === 'triangle') {
+        box.className = 'visual-box visual-triangle';
+        box.innerHTML = `
+          <svg viewBox="0 0 600 220" aria-label="Triángulo topográfico">
+            <rect width="600" height="220" fill="url(#bg)"/>
+            <defs>
+              <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#dbeafe"/>
+                <stop offset="100%" stop-color="#e9d5ff"/>
+              </linearGradient>
+            </defs>
+            <line x1="80" y1="180" x2="360" y2="180" stroke="#334155" stroke-width="5"/>
+            <line x1="360" y1="180" x2="360" y2="70" stroke="#334155" stroke-width="5"/>
+            <line x1="80" y1="180" x2="360" y2="70" stroke="#7c3aed" stroke-width="6"/>
+            <rect x="345" y="165" width="15" height="15" fill="#334155"/>
+            <text x="180" y="205" font-size="20" fill="#334155">10 m</text>
+            <text x="378" y="130" font-size="20" fill="#334155">2 m</text>
+            <text x="182" y="112" font-size="20" fill="#7c3aed">pendiente</text>
+          </svg>
+        `;
+      } else {
+        box.className = 'visual-box visual-mountain';
+        box.innerHTML = `
+          <svg viewBox="0 0 600 220" aria-label="Escena de montaña">
+            <rect width="600" height="220" fill="#dcfce7"/>
+            <circle cx="90" cy="55" r="28" fill="#fde047"/>
+            <polygon points="20,200 130,90 240,200" fill="#65a30d"/>
+            <polygon points="150,200 320,50 480,200" fill="#16a34a"/>
+            <polygon points="370,200 470,110 580,200" fill="#84cc16"/>
+            <line x1="80" y1="185" x2="180" y2="120" stroke="#0f172a" stroke-width="5" stroke-dasharray="9 6"/>
+            <circle cx="80" cy="185" r="7" fill="#0f172a"/>
+            <circle cx="180" cy="120" r="7" fill="#0f172a"/>
+            <text x="195" y="124" font-size="18" fill="#0f172a">distancia estimada</text>
+          </svg>
+        `;
+      }
+    }
+
+    function renderGame() {
+      locked = false;
+      const level = levels[levelIndex];
+      const question = level.questions[questionIndex];
+      document.getElementById('levelTitle').textContent = level.title;
+      document.getElementById('levelIntro').textContent = level.intro;
+      document.getElementById('levelConcept').textContent = level.concept;
+      document.getElementById('questionCounter').textContent = `Pregunta ${questionIndex + 1} de ${level.questions.length}`;
+      document.getElementById('questionText').textContent = question.prompt;
+      renderHearts();
+      renderVisual(level.visual);
+
+      const progress = Math.round((answeredCount() / totalQuestions()) * 100);
+      document.getElementById('progressText').textContent = progress + '%';
+      document.getElementById('progressFill').style.width = progress + '%';
+
+      const optionsBox = document.getElementById('options');
+      const feedback = document.getElementById('feedback');
+      optionsBox.innerHTML = '';
+      feedback.className = 'feedback';
+      feedback.innerHTML = '';
+
+      question.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option';
+        btn.textContent = option;
+        btn.onclick = () => selectOption(index, btn);
+        optionsBox.appendChild(btn);
+      });
+    }
+
+    function selectOption(index, btnElement) {
+      if (locked) return;
+      locked = true;
+
+      const level = levels[levelIndex];
+      const question = level.questions[questionIndex];
+      const options = document.querySelectorAll('.option');
+      const feedback = document.getElementById('feedback');
+
+      options.forEach((opt, i) => {
+        if (i === question.answer) opt.classList.add('correct');
+      });
+
+      if (index === question.answer) {
+        score++;
+        feedback.innerHTML = `<strong class="correct">¡Correcto!</strong><br>${question.explanation}<br><button class="btn btn-secondary" onclick="nextQuestion()">Continuar</button>`;
+      } else {
+        hearts = Math.max(0, hearts - 1);
+        btnElement.classList.add('wrong');
+        feedback.innerHTML = `<strong class="wrong">Respuesta incorrecta.</strong><br>${question.explanation}<br><button class="btn btn-secondary" onclick="nextQuestion()">Continuar</button>`;
+      }
+
+      renderHearts();
+      feedback.classList.add('show');
+    }
+
+    function nextQuestion() {
+      if (hearts === 0) {
+        finishGame();
+        return;
+      }
+
+      const level = levels[levelIndex];
+      if (questionIndex < level.questions.length - 1) {
+        questionIndex++;
+      } else if (levelIndex < levels.length - 1) {
+        levelIndex++;
+        questionIndex = 0;
+      } else {
+        finishGame();
+        return;
+      }
+      renderGame();
+    }
+
+    function finishGame() {
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.remove('hidden');
+      const total = totalQuestions();
+      let msg = 'Vas en camino. Repite la misión y fortalece unidades, geometría y trigonometría.';
+      if (score >= 8) msg = '¡Excelente! Ya actúas como un guardián con criterio topográfico.';
+      else if (score >= 5) msg = 'Muy bien. Tienes una buena base y puedes reforzar algunos conceptos.';
+
+      document.getElementById('finalMessage').textContent = msg;
+      document.getElementById('finalScore').textContent = `${score}/${total}`;
+      document.getElementById('finalHearts').textContent = hearts;
+    }
+
+    function resetGame() {
+      levelIndex = 0;
+      questionIndex = 0;
+      score = 0;
+      hearts = 3;
+      locked = false;
+      document.getElementById('startScreen').classList.remove('hidden');
+      document.getElementById('gameScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
